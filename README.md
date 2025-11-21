@@ -1,4 +1,4 @@
-🦷 Dentection - Sistema de Detección de Anomalías Dentales
+# 🦷 Dentection - Sistema de Detección de Anomalías Dentales
 
 ![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)
 ![Streamlit](https://img.shields.io/badge/Streamlit-1.28+-red.svg)
