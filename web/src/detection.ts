@@ -15,8 +15,8 @@ export function decodeDetections(data: Float32Array, dims: readonly number[], g:
     const cx = data[i], cy = data[anchors + i], w = data[2 * anchors + i], h = data[3 * anchors + i];
     if (![cx, cy, w, h].every(Number.isFinite) || w <= 0 || h <= 0) continue;
     const box: Detection['box'] = [
-      Math.max(0, (cx-w/2-g.padX)/g.scale), Math.max(0, (cy-h/2-g.padY)/g.scale),
-      Math.min(g.width, (cx+w/2-g.padX)/g.scale), Math.min(g.height, (cy+h/2-g.padY)/g.scale),
+      (cx-w/2-g.padX)/g.scale, (cy-h/2-g.padY)/g.scale,
+      (cx+w/2-g.padX)/g.scale, (cy+h/2-g.padY)/g.scale,
     ];
     if (box[2] > box[0] && box[3] > box[1]) candidates.push({classId, confidence:score, box});
   }
@@ -27,7 +27,9 @@ export function decodeDetections(data: Float32Array, dims: readonly number[], g:
     result.push(candidate);
     if (result.length === 300) break;
   }
-  return result;
+  // Ultralytics suppresses on original, untrimmed boxes before clipping to image bounds.
+  return result.map(d=>({...d,box:[Math.max(0,d.box[0]),Math.max(0,d.box[1]),Math.min(g.width,d.box[2]),Math.min(g.height,d.box[3])] as Detection['box']}))
+    .filter(d=>d.box[2]>d.box[0]&&d.box[3]>d.box[1]);
 }
 
 export function intersectionOverUnion(a: Detection['box'], b: Detection['box']): number {

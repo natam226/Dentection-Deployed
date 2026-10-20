@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { Miniflare } from 'miniflare';
-import { readFileSync } from 'node:fs';
+import { readFileSync,readdirSync } from 'node:fs';
 import { createHandler } from '../worker/index';
 import type { Env } from '../worker/types';
 
@@ -24,11 +24,12 @@ beforeAll(async () => {
   mf = new Miniflare({modules:true, script:'export default { fetch(){ return new Response("test"); } }',
     compatibilityDate:'2026-08-01', d1Databases:['DB'], kvNamespaces:['IMAGES']});
   const DB = await mf.getD1Database('DB');
-  const migration = readFileSync(new URL('../migrations/0001_initial.sql',import.meta.url),'utf8');
-  // exec accepts one complete SQL statement per line, so run the migration in a batch via prepare.
-  const triggerStart = migration.indexOf('CREATE TRIGGER');
-  const statements = [...migration.slice(0,triggerStart).split(';').map(s=>s.trim()).filter(Boolean), migration.slice(triggerStart)];
-  await DB.batch(statements.map(s=>DB.prepare(s)));
+  for(const file of readdirSync(new URL('../migrations',import.meta.url)).filter(f=>f.endsWith('.sql')).sort()){
+    const migration=readFileSync(new URL('../migrations/'+file,import.meta.url),'utf8');
+    const start=migration.indexOf('CREATE TRIGGER');
+    const statements=start<0?migration.split(';').map(s=>s.trim()).filter(Boolean):[...migration.slice(0,start).split(';').map(s=>s.trim()).filter(Boolean),migration.slice(start)];
+    await DB.batch(statements.map(s=>DB.prepare(s)));
+  }
   env = {DB, IMAGES:await mf.getKVNamespace('IMAGES'), ASSETS:{fetch:()=>new Response('assets')},
     AUTH_PEPPER:'test-only-pepper-not-for-production'} as unknown as Env;
 },30000);
@@ -108,5 +109,48 @@ describe('private study API',()=>{
     expect((await limited(request('/studies','POST',data),env)).status).toBe(201);
     expect((await limited(request('/studies/'+data.id,'DELETE'),env)).status).toBe(204);
     expect((await limited(request('/studies','POST',await payload()),env)).status).toBe(429);
+  },30000);
+  it('keeps failed image deletion visible and allows a safe retry',async()=>{
+    const data=await payload();await alice(request('/studies','POST',data),env);
+    await alice(new Request('https://app.test/api/studies/'+data.id+'/image',{method:'PUT',headers:{Origin:'https://app.test','Content-Type':'image/png'},body:image}),env);
+    const unavailable={...env,IMAGES:{delete:async()=>{throw new Error('KV unavailable')}}} as unknown as Env;
+    expect((await alice(request('/studies/'+data.id,'DELETE'),unavailable)).status).toBe(503);
+    expect((await alice(request('/studies/'+data.id),env)).status).toBe(404);
+    const list=await (await alice(request('/studies'),env)).json() as any;
+    expect(list.studies.find((s:any)=>s.id===data.id).status).toBe('deleting');
+    expect((await alice(request('/studies/'+data.id,'DELETE'),env)).status).toBe(204);
+    expect((await alice(request('/studies/'+data.id,'DELETE'),env)).status).toBe(204);
+    expect((await (await alice(request('/studies'),env)).json() as any).studies.some((s:any)=>s.id===data.id)).toBe(false);
+  });
+  it('does not revive an original uploaded concurrently with deletion',async()=>{
+    const data=await payload();await alice(request('/studies','POST',data),env);
+    const racing={...env,IMAGES:{put:async(key:string,value:Uint8Array,options:any)=>{
+      await alice(request('/studies/'+data.id,'DELETE'),env);
+      await env.IMAGES.put(key,value,options);
+    },delete:(key:string)=>env.IMAGES.delete(key)}} as unknown as Env;
+    expect((await alice(new Request('https://app.test/api/studies/'+data.id+'/image',{method:'PUT',headers:{Origin:'https://app.test','Content-Type':'image/png'},body:image}),racing)).status).toBe(404);
+    const row=await env.DB.prepare('SELECT image_key FROM studies WHERE id=?').bind(data.id).first<any>();
+    expect(await env.IMAGES.get(row.image_key)).toBe(null);
+  });
+  it('pages through more than 200 studies without losing the oldest',async()=>{
+    await env.DB.prepare("INSERT INTO professionals(id,email,name) VALUES('paged','paged@example.test','Paged')").run();
+    const ids:string[]=[];
+    for(let batch=0;batch<6;batch++){
+      await env.DB.prepare("DELETE FROM upload_counts WHERE owner_id='paged'").run();
+      const statements=[];
+      for(let i=0;i<40&&ids.length<201;i++){
+        const d=await payload();ids.push(d.id);
+        statements.push(env.DB.prepare('INSERT INTO studies(id,owner_id,filename,mime_type,size,width,height,image_key,sha256,model_version,parameters,detections) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)').bind(d.id,'paged','old.png','image/png',image.length,10,10,'paged/'+d.id,d.sha256,d.modelVersion,JSON.stringify(d.parameters),'[]'));
+      }
+      if(statements.length)await env.DB.batch(statements);
+    }
+    const paged=createHandler(async()=>({id:'paged',email:'paged@example.test'}));
+    const seen=new Set<string>();let cursor:string|undefined;
+    do{
+      const response=await paged(request('/studies'+(cursor?'?cursor='+cursor:'')),env);
+      const body=await response.json() as any;expect(body.total).toBe(201);
+      for(const study of body.studies)seen.add(study.id);cursor=body.nextCursor;
+    }while(cursor);
+    expect(seen.size).toBe(201);expect(ids.every(id=>seen.has(id))).toBe(true);
   },30000);
 });

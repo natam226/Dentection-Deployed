@@ -56,11 +56,7 @@ def main():
     proof = {'geometry': {'width': width, 'height': height, 'scale': scale, 'padX': left, 'padY': top},
              'detections': boxes, 'fixture': 'first existing notebook plot; runtime equivalence only, not a clinical accuracy benchmark'}
     (evidence / 'python.json').write_text(json.dumps(proof, indent=2), encoding='utf-8')
-    # Only local proof assets; excluded from Vite's production entry and removed before deployment.
-    proof_assets = root / 'web/public/proof'
-    proof_assets.mkdir(exist_ok=True)
-    for name in ['input.f32', 'input.png', 'python.json']:
-        (proof_assets / name).write_bytes((evidence / name).read_bytes())
+    # Authorized samples stay outside public assets. Vite serves these files only in local dev.
     print(json.dumps({'model': str(target), 'bytes': target.stat().st_size,
                       'classes': len(names), 'pythonDetections': len(boxes)}))
 

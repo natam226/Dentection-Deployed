@@ -4,9 +4,9 @@
 
 **Goal:** Publish the approved browser application with existing-model analysis, authenticated private history, notes and PDF.
 
-**Architecture:** Static TypeScript application and ONNX Runtime Web, a Cloudflare Worker API, D1 records and KV original images. Access OTP authenticates invited professionals. Browser inference is a prerequisite, not an assumed result.
+**Architecture:** Static TypeScript application and ONNX Runtime Web, a Cloudflare Worker API, D1 records and KV original images. Invite-only password accounts authenticate professionals (user-approved supersession after Access required a card). Browser inference is a prerequisite, not an assumed result.
 
-**Tech Stack:** TypeScript, Vite, ONNX Runtime Web, jsPDF, Workers, D1, KV, Access, Python export tooling.
+**Tech Stack:** TypeScript, Vite, ONNX Runtime Web, jsPDF, Workers, D1, KV, password sessions, Python export tooling.
 
 **Spec:** `docs/desarrollo/specs/2026-10-20-cloudflare-mvp-design.md`, approved in chat 2026-10-20.
 
@@ -14,7 +14,7 @@
 
 - Two-hour target, no paid plans, existing model unchanged, Spanish browser UI.
 - JPG/JPEG/PNG, 5 MiB maximum original image; preserve original; 500 MiB application storage cap.
-- Cloud history is private per authenticated identity; fail closed without Access.
+- Cloud history is private per authenticated identity; fail closed without a valid server-side session.
 - No training, prescriptions, public signup or automatic patient email.
 - Start with ONNX verification and stop that architecture if parity is not demonstrated.
 

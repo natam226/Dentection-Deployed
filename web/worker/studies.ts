@@ -3,10 +3,10 @@ export const MAX_IMAGE = 5 * 1024 * 1024;
 export class HttpError extends Error { constructor(public status:number,message:string){super(message);} }
 export function check(condition:unknown,message:string):asserts condition {if(!condition)throw new HttpError(400,message);}
 export interface StudyRow {
- id:string;owner_id:string;filename:string;created_at:string;status:string;mime_type:string;size:number;
+ deletion_pending:number;id:string;owner_id:string;filename:string;created_at:string;status:string;mime_type:string;size:number;
  width:number;height:number;image_key:string;sha256:string;model_version:string;parameters:string;detections:string;notes:string;revision:number;
 }
-export function present(row:StudyRow){return {id:row.id,filename:row.filename,createdAt:row.created_at,status:row.status,
+export function present(row:StudyRow){return {id:row.id,filename:row.filename,createdAt:row.created_at,status:row.deletion_pending===1?'deleting':row.status,
  mimeType:row.mime_type,size:row.size,width:row.width,height:row.height,modelVersion:row.model_version,
  parameters:JSON.parse(row.parameters),detections:JSON.parse(row.detections) as Detection[],notes:row.notes,revision:row.revision};}
 export async function readLimited(request:Request,max:number):Promise<Uint8Array> {

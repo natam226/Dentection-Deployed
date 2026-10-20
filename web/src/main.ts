@@ -7,13 +7,15 @@ const $=<T extends HTMLElement=HTMLElement>(id:string)=>document.getElementById(
 const iconPaths:Record<string,string>={plus:'M12 5v14M5 12h14',history:'M3 12a9 9 0 1 0 3-6.7M3 3v6h6M12 7v5l3 2',shield:'M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6l-8-3ZM8 12l3 3 5-6',upload:'M12 16V3M7 8l5-5 5 5M4 15v5a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-5',download:'M12 3v13M7 11l5 5 5-5M4 17v4h16v-4',logout:'M9 4H4v16h5M14 8l4 4-4 4M8 12h10',file:'M14 2H5v20h14V7l-5-5ZM14 2v6h5M8 13h8M8 17h6'};
 for(const node of document.querySelectorAll<HTMLElement>('[data-icon]'))node.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="'+iconPaths[node.dataset.icon!]+'"/></svg>';
 let profile:Profile|undefined,current:Study|undefined,original:Blob|undefined,image:ImageBitmap|HTMLImageElement|undefined;
+let authRecovery=false,recoveryView:'new'|'history'='new',expectedEmail:string|undefined;
+let historyCursor:string|null=null,historyTotal=0;
 let studies:Study[]=[],busy=false,selected:number|undefined,zoom=1,canRetry=false,objectURL:string|undefined;
 const notes=$<HTMLTextAreaElement>('notes'),input=$<HTMLInputElement>('image-input');
 const date=(value?:string)=>value?new Date(value).toLocaleString('es-CO',{dateStyle:'medium',timeStyle:'short'}):'Análisis actual';
 const percent=(n:number)=>(n*100).toFixed(1)+' %';
 function notice(message:string,kind='info'){const el=$('notification');el.textContent=message;el.className='notification '+kind;el.hidden=false;}
 function clearNotice(){$('notification').hidden=true;}
-function errorMessage(error:unknown){if(error instanceof ApiError&&error.status===401)return 'Tu sesión terminó. Guarda una copia de tus observaciones y vuelve a iniciar sesión para continuar.';return error instanceof Error?error.message:'No se pudo completar la operación.';}
+function errorMessage(error:unknown){if(error instanceof ApiError&&error.status===401)return 'Tu sesión terminó. Inicia sesión aquí para continuar; tu imagen y observaciones siguen en esta vista.';return error instanceof Error?error.message:'No se pudo completar la operación.';}
 function progress(message:string){$('activity').hidden=false;$('activity-text').textContent=message;}
 function actions(){
  const dirty=!!current&&needsNoteSave(current,notes.value);
@@ -23,10 +25,10 @@ function actions(){
  $('notes-count').textContent=notes.value.length.toLocaleString('es-CO')+' / 10.000 caracteres';
  $('retry-save').hidden=!canRetry||busy;
  notes.disabled=busy||!current||current.status!=='ready';input.disabled=busy;
- for(const id of ['nav-new','nav-history','new-study','history-new'])$<HTMLButtonElement>(id).disabled=busy||!profile;
+ for(const id of ['nav-new','nav-history','new-study','history-new','history-more'])$<HTMLButtonElement>(id).disabled=busy||!profile||authRecovery;
  const status=$('save-status');status.textContent=current?.status==='ready'?'Guardado en tu historial':canRetry?'Guardado pendiente':'Sin guardar';status.classList.toggle('saved',current?.status==='ready');
 }
-async function operation(fn:()=>Promise<void>){if(busy)return;busy=true;actions();try{await fn();}catch(error){notice(errorMessage(error),'error');}finally{busy=false;$('activity').hidden=true;actions();}}
+async function operation(fn:()=>Promise<void>){if(busy)return;busy=true;actions();try{await fn();}catch(error){notice(errorMessage(error),'error');if(error instanceof ApiError&&error.status===401)showSessionRecovery();}finally{busy=false;$('activity').hidden=true;actions();}}
 function canLeave(){return !current||(!needsNoteSave(current,notes.value)&&current.status==='ready')||confirm('Hay cambios o un estudio sin guardar. ¿Quieres salir de esta revisión?');}
 function activate(view:'new'|'history'){$('new-view').hidden=view!=='new';$('history-view').hidden=view!=='history';$('nav-new').classList.toggle('active',view==='new');$('nav-history').classList.toggle('active',view==='history');
  $('nav-new').setAttribute('aria-current',view==='new'?'page':'false');$('nav-history').setAttribute('aria-current',view==='history'?'page':'false');}
@@ -34,16 +36,19 @@ function reset(){current=undefined;original=undefined;if(image&&'close'in image)
 function newStudy(){if(!busy&&canLeave())reset();}
 for(const id of ['nav-new','new-study','history-new'])$(id).addEventListener('click',newStudy);
 $('nav-history').addEventListener('click',()=>{if(!busy&&canLeave()){activate('history');clearNotice();void operation(refreshHistory);}});
-async function refreshHistory(){const result=await api<{studies:Study[]}>('/studies');studies=result.studies;$('history-count').textContent=String(studies.length);renderHistory();}
+interface HistoryPage{studies:Study[];total:number;nextCursor:string|null}
+function historyState(){$('history-count').textContent=String(historyTotal);$('history-state').textContent=historyTotal>studies.length?'Mostrando '+studies.length+' de '+historyTotal+' estudios. Carga más para buscar entre los anteriores.':historyTotal+' estudios en tu historial.';$('history-more').hidden=!historyCursor;}
+async function refreshHistory(){const result=await api<HistoryPage>('/studies');studies=result.studies;historyCursor=result.nextCursor;historyTotal=result.total;historyState();renderHistory();}
+$('history-more').addEventListener('click',()=>void operation(async()=>{if(!historyCursor)return;const result=await api<HistoryPage>('/studies?cursor='+encodeURIComponent(historyCursor));studies.push(...result.studies);historyCursor=result.nextCursor;historyTotal=result.total;historyState();renderHistory();}));
 function renderHistory(){
  const list=$('history-list');list.replaceChildren();const search=$<HTMLInputElement>('history-search').value.trim().toLocaleLowerCase('es');
  const visible=studies.filter(s=>s.filename.toLocaleLowerCase('es').includes(search));
  if(!visible.length){const p=document.createElement('p');p.className='history-empty';p.textContent=search?'No hay estudios con ese nombre.':'Tu historial empieza con tu primera radiografía.';list.append(p);return;}
  for(const study of visible){const row=document.createElement('article');row.className='history-row';
   const symbol=document.createElement('div');symbol.className='study-file-icon';symbol.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="'+iconPaths.file+'"/></svg>';
-  const main=document.createElement('div');main.className='history-row-main';const title=document.createElement('strong');title.textContent=study.filename;const meta=document.createElement('p');meta.textContent=date(study.createdAt)+' · '+(study.status==='ready'?study.detections.length+' hallazgos':'Carga incompleta')+(study.notes?' · Con observaciones':'');main.append(title,meta);
+  const main=document.createElement('div');main.className='history-row-main';const title=document.createElement('strong');title.textContent=study.filename;const meta=document.createElement('p');meta.textContent=date(study.createdAt)+' · '+(study.status==='ready'?study.detections.length+' hallazgos':study.status==='deleting'?'Eliminación pendiente: vuelve a intentar':'Carga incompleta')+(study.notes?' · Con observaciones':'');main.append(title,meta);
   const open=document.createElement('button');open.className='button secondary';open.textContent='Abrir estudio';open.disabled=study.status!=='ready';open.addEventListener('click',()=>{if(!busy&&canLeave())void operation(()=>openStudy(study.id));});
-  const remove=document.createElement('button');remove.className='delete-study';remove.textContent='Eliminar';remove.setAttribute('aria-label','Eliminar '+study.filename);remove.addEventListener('click',()=>{if(busy||!confirm('¿Eliminar este estudio y su radiografía de tu historial? Esta acción no se puede deshacer.'))return;void operation(async()=>{await api('/studies/'+study.id,{method:'DELETE'});if(current?.id===study.id){current=undefined;original=undefined;}await refreshHistory();notice('El estudio se eliminó de tu historial.','success');});});
+  const remove=document.createElement('button');remove.className='delete-study';remove.textContent=study.status==='deleting'?'Reintentar eliminación':'Eliminar';remove.setAttribute('aria-label','Eliminar '+study.filename);remove.addEventListener('click',()=>{if(busy||!confirm('¿Eliminar este estudio y su radiografía de tu historial? Esta acción no se puede deshacer.'))return;void operation(async()=>{try{await api('/studies/'+study.id,{method:'DELETE'});}catch(error){if(!(error instanceof ApiError&&error.status===401))await refreshHistory();throw error;}if(current?.id===study.id){current=undefined;original=undefined;}await refreshHistory();notice('El estudio se eliminó de tu historial.','success');});});
   row.append(symbol,main,open,remove);list.append(row);
  }
 }
@@ -100,6 +105,7 @@ $('analysis-threshold').addEventListener('input',()=>{$('analysis-threshold-valu
 $('retry-save').addEventListener('click',()=>void operation(async()=>{progress('Reintentando el guardado…');await storeCurrent();}));
 async function openStudy(id:string){
  progress('Abriendo tu estudio…');const study=await api<Study>('/studies/'+id);const response=await fetch('/api/studies/'+id+'/image',{credentials:'same-origin'});
+ if(response.status===401)throw new ApiError(401,'Tu sesión terminó.');
  if(!response.ok){let message='No se pudo recuperar la radiografía.';try{message=(await response.json()).error||message;}catch{}throw new Error(message);}
  const blob=await response.blob(),decoded=await decode(blob);if(image&&'close'in image)image.close();image=decoded;original=blob;current=study;canRetry=false;clearNotice();setupStudy();
 }
@@ -116,6 +122,16 @@ $('download-pdf').addEventListener('click',()=>void operation(async()=>{
 }));
 window.addEventListener('beforeunload',event=>{if(current&&(needsNoteSave(current,notes.value)||canRetry)){event.preventDefault();}});
 let registering=false;
+function showSessionRecovery(){
+ if(!authRecovery)recoveryView=$('history-view').hidden?'new':'history';
+ authRecovery=true;expectedEmail=profile?.email;registering=false;
+ $('auth-panel').hidden=false;$('new-view').hidden=true;$('history-view').hidden=true;
+ $('register-name').hidden=true;$('register-invitation').hidden=true;$('auth-switch').hidden=true;
+ $('auth-title').textContent='Recupera tu sesión';$('auth-description').textContent='Vuelve a iniciar sesión con la misma cuenta. Conservaremos la radiografía y las observaciones para que puedas reintentar el guardado.';
+ const email=$<HTMLInputElement>('auth-email');email.value=expectedEmail||'';email.readOnly=!!expectedEmail;
+ $<HTMLInputElement>('auth-name').required=false;$<HTMLInputElement>('auth-invitation').required=false;
+ $<HTMLInputElement>('auth-password').minLength=1;$<HTMLInputElement>('auth-password').autocomplete='current-password';$('auth-submit').textContent='Iniciar sesión';
+}
 $('auth-switch').addEventListener('click',()=>{
  registering=!registering;$('register-name').hidden=!registering;$('register-invitation').hidden=!registering;
  $('auth-title').textContent=registering?'Crea tu cuenta profesional':'Accede a tu espacio';
@@ -125,7 +141,14 @@ $('auth-switch').addEventListener('click',()=>{
 });
 $('auth-form').addEventListener('submit',event=>{event.preventDefault();void(async()=>{
  const button=$<HTMLButtonElement>('auth-submit');button.disabled=true;button.textContent=registering?'Creando cuenta…':'Iniciando sesión…';$('auth-error').hidden=true;
- try{await api('/auth/'+(registering?'register':'login'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:$<HTMLInputElement>('auth-email').value,password:$<HTMLInputElement>('auth-password').value,name:$<HTMLInputElement>('auth-name').value,invitation:$<HTMLInputElement>('auth-invitation').value})});$<HTMLInputElement>('auth-password').value='';location.reload();}
+ try{await api('/auth/'+(registering?'register':'login'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:$<HTMLInputElement>('auth-email').value,password:$<HTMLInputElement>('auth-password').value,name:$<HTMLInputElement>('auth-name').value,invitation:$<HTMLInputElement>('auth-invitation').value})});$<HTMLInputElement>('auth-password').value='';
+ const signedIn=await api<Profile>('/me');
+ if(authRecovery&&expectedEmail&&signedIn.email!==expectedEmail){await api('/auth/logout',{method:'POST'});throw new Error('Inicia sesión con la misma cuenta para recuperar este trabajo.');}
+ profile=signedIn;$('account-name').textContent=profile.name;$('account-email').textContent=profile.email;$('account-avatar').textContent=profile.name.slice(0,1).toUpperCase();
+ $('auth-panel').hidden=true;
+ if(authRecovery){authRecovery=false;activate(recoveryView);notice('Sesión recuperada. Ya puedes reintentar el guardado o descargar el informe.','success');}
+ else{activate('new');await refreshHistory();}
+ actions();}
  catch(error){$('auth-error').textContent=error instanceof Error?error.message:'No se pudo iniciar sesión.';$('auth-error').hidden=false;}
  finally{button.disabled=false;button.textContent=registering?'Crear cuenta':'Iniciar sesión';}
  })();});

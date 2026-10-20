@@ -1,6 +1,6 @@
 import type {Detection} from './detection';
 export interface Study {
- id:string;filename:string;createdAt?:string;status:'pending'|'ready';mimeType:string;size:number;width:number;height:number;
+ id:string;filename:string;createdAt?:string;status:'pending'|'ready'|'deleting';mimeType:string;size:number;width:number;height:number;
  modelVersion:string;parameters:{confidence:number;iou:number};detections:Detection[];notes:string;revision:number;sha256?:string;
 }
 export interface Profile {email:string;name:string}

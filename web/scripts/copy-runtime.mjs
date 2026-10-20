@@ -1,6 +1,8 @@
 import {copyFile,mkdir,access} from 'node:fs/promises';
 import {createRequire} from 'node:module';
 import {dirname,join} from 'node:path';
+import {assertNoPrivateFixtures} from './build-guards.mjs';
+await assertNoPrivateFixtures('public');
 const require=createRequire(import.meta.url);
 const source=dirname(require.resolve('onnxruntime-web/wasm'));
 await mkdir('public/ort',{recursive:true});

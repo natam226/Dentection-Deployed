@@ -27,4 +27,10 @@ describe('YOLOv8 detections', () => {
   it('rejects a wrong output layout instead of inventing detections', () => {
     expect(() => decodeDetections(new Float32Array(6), [1, 1, 6], geometry, 0.25, 0.7)).toThrow();
   });
+  it('runs suppression before clipping boxes at the image border',()=>{
+    const out=new Float32Array([0,50,60,60,200,100,100,100,.9,.8]);
+    const found=decodeDetections(out,[1,5,2],{width:100,height:120,scale:1,padX:0,padY:0},.25,.7);
+    expect(found).toHaveLength(2);
+    expect(found.map(d=>d.box)).toEqual([[0,10,100,110],[0,10,100,110]]);
+  });
 });

@@ -7,6 +7,11 @@ async function profile(env:Env,user:Identity){
  await env.DB.prepare('INSERT INTO professionals(id,email,name) VALUES(?,?,?) ON CONFLICT(id) DO UPDATE SET email=excluded.email').bind(user.id,user.email,user.email.split('@')[0]).run();
  return env.DB.prepare('SELECT email,name FROM professionals WHERE id=?').bind(user.id).first();
 }
+async function purgeStudy(env:Env,row:StudyRow){
+ await env.DB.prepare('UPDATE studies SET deletion_pending=1 WHERE id=? AND owner_id=?').bind(row.id,row.owner_id).run();
+ try{await env.IMAGES.delete(row.image_key);}catch{throw new HttpError(503,'La eliminación está pendiente. Reintenta desde tu historial.');}
+ await env.DB.prepare("UPDATE studies SET deletion_pending=2,filename='Estudio eliminado',notes='',detections='[]' WHERE id=? AND owner_id=?").bind(row.id,row.owner_id).run();
+}
 export function createHandler(authenticateRequest: Authenticate) {
   return async (request: Request, env: Env): Promise<Response> => {
     const url=new URL(request.url);
@@ -19,13 +24,19 @@ export function createHandler(authenticateRequest: Authenticate) {
       const path=url.pathname.slice(4);
       if(path==='/me'&&request.method==='GET')return json(await profile(env,user));
       if(path==='/studies'&&request.method==='GET'){
-        const rows=await env.DB.prepare('SELECT * FROM studies WHERE owner_id=? ORDER BY created_at DESC LIMIT 200').bind(user.id).all<StudyRow>();
-        return json({studies:rows.results.map(present)});
+        const cursor=url.searchParams.get('cursor');let before:StudyRow|null=null;
+        if(cursor){check(/^[a-f0-9-]{36}$/i.test(cursor),'El punto del historial no es válido.');before=await env.DB.prepare('SELECT * FROM studies WHERE id=? AND owner_id=?').bind(cursor,user.id).first<StudyRow>();check(before,'El punto del historial no está disponible.');}
+        const condition=before?' AND (created_at<? OR (created_at=? AND id<?))':'';
+        const values=before?[user.id,before.created_at,before.created_at,before.id]:[user.id];
+        const rows=await env.DB.prepare('SELECT * FROM studies WHERE owner_id=? AND deletion_pending<>2'+condition+' ORDER BY created_at DESC,id DESC LIMIT 51').bind(...values).all<StudyRow>();
+        const total=await env.DB.prepare('SELECT COUNT(*) AS n FROM studies WHERE owner_id=? AND deletion_pending<>2').bind(user.id).first<{n:number}>();
+        const page=rows.results.slice(0,50);
+        return json({studies:page.map(present),total:total?.n||0,nextCursor:rows.results.length>50?page.at(-1)!.id:null});
       }
       if(path==='/studies'&&request.method==='POST'){
         const d=validateStudy(await readJSON(request));
         const existing=await env.DB.prepare('SELECT * FROM studies WHERE id=?').bind(d.id).first<StudyRow>();
-        if(existing){if(existing.owner_id!==user.id)throw new HttpError(409,'No se pudo asignar ese identificador. Reintenta con un nuevo análisis.');return json(present(existing));}
+        if(existing){if(existing.deletion_pending)throw new HttpError(409,'Ese estudio se está eliminando. Inicia un nuevo análisis.');if(existing.owner_id!==user.id)throw new HttpError(409,'No se pudo asignar ese identificador. Reintenta con un nuevo análisis.');return json(present(existing));}
         await profile(env,user);
         await env.DB.prepare('INSERT INTO studies(id,owner_id,filename,mime_type,size,width,height,image_key,sha256,model_version,parameters,detections) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)')
           .bind(d.id,user.id,d.filename,d.mimeType,d.size,d.width,d.height,'study/'+encodeURIComponent(user.id)+'/'+d.id,d.sha256,d.modelVersion,JSON.stringify(d.parameters),JSON.stringify(d.detections)).run();
@@ -36,6 +47,8 @@ export function createHandler(authenticateRequest: Authenticate) {
       const [,id,action]=match;
       const row=await env.DB.prepare('SELECT * FROM studies WHERE id=? AND owner_id=?').bind(id,user.id).first<StudyRow>();
       if(!row)throw new HttpError(404,'No se encontró el estudio.');
+      if(!action&&request.method==='DELETE'){if(row.deletion_pending!==2)await purgeStudy(env,row);return new Response(null,{status:204,headers:privateHeaders});}
+      if(row.deletion_pending)throw new HttpError(404,'No se encontró el estudio.');
       if(!action&&request.method==='GET')return json(present(row));
       if(action==='image'&&request.method==='GET'){
         const value=await env.IMAGES.get(row.image_key,{type:'stream'});
@@ -49,25 +62,20 @@ export function createHandler(authenticateRequest: Authenticate) {
         const digest=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))).map(v=>v.toString(16).padStart(2,'0')).join('');
         check(digest===row.sha256,'La imagen recibida no coincide con el original. Reintenta la carga.');
         await env.IMAGES.put(row.image_key,bytes,{metadata:{mimeType:row.mime_type}});
-        const update=await env.DB.prepare("UPDATE studies SET status='ready' WHERE id=? AND owner_id=? AND status='pending'").bind(id,user.id).run();
+        const update=await env.DB.prepare("UPDATE studies SET status='ready' WHERE id=? AND owner_id=? AND status='pending' AND deletion_pending=0").bind(id,user.id).run();
         if(!update.meta.changes){
           const latest=await env.DB.prepare('SELECT * FROM studies WHERE id=? AND owner_id=?').bind(id,user.id).first<StudyRow>();
-          if(latest?.status==='ready')return json(present(latest));
-          await env.IMAGES.delete(row.image_key);throw new HttpError(409,'El estudio cambió durante la carga. Vuelve al historial.');
+          if(latest?.status==='ready'&&!latest.deletion_pending)return json(present(latest));
+          await purgeStudy(env,row);throw new HttpError(404,'El estudio se eliminó durante la carga.');
         }
         return json(present({...row,status:'ready'}));
       }
       if(action==='notes'&&request.method==='PATCH'){
         const d=await readJSON(request);
         check(d&&typeof d.notes==='string'&&d.notes.length<=10000&&Number.isInteger(d.revision)&&d.revision>=0,'Las observaciones deben tener un máximo de 10.000 caracteres.');
-        const result=await env.DB.prepare('UPDATE studies SET notes=?, revision=revision+1 WHERE id=? AND owner_id=? AND revision=?').bind(d.notes,id,user.id,d.revision).run();
+        const result=await env.DB.prepare('UPDATE studies SET notes=?, revision=revision+1 WHERE id=? AND owner_id=? AND revision=? AND deletion_pending=0').bind(d.notes,id,user.id,d.revision).run();
         if(!result.meta.changes)throw new HttpError(409,'El estudio se actualizó en otra pestaña. Recarga el estudio antes de guardar.');
         return json({notes:d.notes,revision:d.revision+1});
-      }
-      if(!action&&request.method==='DELETE'){
-        await env.DB.prepare('DELETE FROM studies WHERE id=? AND owner_id=?').bind(id,user.id).run();
-        await env.IMAGES.delete(row.image_key);
-        return new Response(null,{status:204,headers:privateHeaders});
       }
       throw new HttpError(405,'Acción no disponible.');
     }catch(error){

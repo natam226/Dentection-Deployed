@@ -33,7 +33,7 @@ cd web
 pnpm install --frozen-lockfile
 pnpm test
 pnpm build
-pnpm exec wrangler d1 migrations apply dentection-local --local --config wrangler.local.jsonc
+pnpm exec wrangler d1 migrations apply DB --local --config wrangler.local.jsonc
 pnpm run preview:local
 ```
 
@@ -54,7 +54,9 @@ pnpm run deploy
 
 `AUTH_PEPPER` debe ser un secreto aleatorio de al menos 32 bytes; no debe estar en Git. Presérvalo: cambiarlo invalida la comprobación de las contraseñas existentes. Las contraseñas usan PBKDF2-SHA256 con sal aleatoria, 100.000 iteraciones (límite del runtime workerd), seguido de HMAC con ese secreto independiente. No se almacenan contraseñas en texto. Hay límite de 10 intentos por correo y 50 por IP cada 15 minutos, también para registro; los contadores expiran.
 
-Las migraciones se aplicaron a la base remota. El archivo ONNX y el runtime WASM se generan localmente y están ignorados por Git; `pnpm build` avisa si falta el modelo. Los pesos `.pt` originales están en el repositorio.
+Las migraciones se aplicaron a la base remota. Las muestras de equivalencia se guardan solo en `work/parity`, fuera de archivos públicos. El servidor local de Vite las sirve en `/proof/`; la compilación rechaza un directorio `public/proof`.
+
+El archivo ONNX y el runtime WASM se generan localmente y están ignorados por Git; `pnpm build` avisa si falta el modelo. Los pesos `.pt` originales están en el repositorio.
 
 ## Invitar profesionales
 
@@ -71,8 +73,10 @@ El script genera un código de 256 bits, guarda solo su hash en D1 y entrega el 
 - Cuota de demostración: 500 MiB de originales en total, 200 cargas diarias en total y 50 por profesional; día UTC. Los contadores diarios no se reinician al borrar estudios.
 - D1 reserva la capacidad antes de subir a KV. Si se interrumpe la red, «Reintentar guardado» usa el mismo identificador sin volver a analizar. Un estudio pendiente se puede eliminar desde el historial.
 - KV tiene consistencia eventual. Al abrir desde otra ubicación inmediatamente después de guardar puede responder que la imagen sigue sincronizándose; vuelve a abrir tras unos segundos.
+- Si vence la sesión durante el trabajo, la misma página permite iniciar sesión con la misma cuenta y reintentar sin perder la imagen ni el texto.
+- La eliminación conserva un registro técnico sin notas ni nombre de archivo hasta confirmar el borrado de KV. Si falla KV, el historial muestra «Eliminación pendiente» y permite reintentar; la cuota no se libera antes de completar el borrado.
 - Las notas incluyen revisión optimista: una edición desactualizada de otra pestaña produce un conflicto en vez de sobrescribir silenciosamente.
-- La lista de historial muestra los 200 estudios más recientes. No hay paginación en este prototipo.
+- El historial carga páginas de 50 estudios, muestra el total y permite cargar anteriores. La búsqueda por nombre filtra las páginas cargadas; la interfaz avisa si quedan estudios por cargar.
 - El primer análisis descarga unos 27 MB de modelo y WASM; tarda más que los siguientes. En celulares la duración depende del dispositivo y memoria.
 - El plan gratuito tiene cuotas propias de solicitudes, CPU, D1 y KV; la aplicación no es ilimitada. No se activó facturación de pago.
 
