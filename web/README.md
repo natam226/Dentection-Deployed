@@ -27,7 +27,7 @@ Necesitas Node 22 o superior, pnpm y Python para exportar el modelo. Desde la ra
 
 ```powershell
 python -m venv .venv-export
-.venv-export\Scripts\python -m pip install ultralytics onnx onnxruntime
+.venv-export\Scripts\python -m pip install -r requirements.txt
 .venv-export\Scripts\python scripts/export_model.py
 cd web
 pnpm install --frozen-lockfile
@@ -61,7 +61,7 @@ El archivo ONNX y el runtime WASM se generan localmente y están ignorados por G
 
 ## Registro abierto y Turnstile
 
-La pantalla ofrece «Iniciar sesión» y «Crear una cuenta». El Worker valida cada token con Siteverify, comprueba `success`, el hostname de la solicitud y la acción `register` o `login`. Tokens ausentes, falsos, vencidos, repetidos o de otra acción/dominio no crean cuentas ni sesiones. Fallos de red o falta del secreto bloquean la operación con opción de reintento.
+La pantalla ofrece «Iniciar sesión» y «Crear una cuenta» sin la navegación ni la cabecera del espacio profesional. Estas aparecen tras autenticar, también cuando se recupera una sesión vencida. El Worker valida cada token con Siteverify, comprueba `success`, el hostname de la solicitud y la acción `register` o `login`. Tokens ausentes, falsos, vencidos, repetidos o de otra acción/dominio no crean cuentas ni sesiones. Fallos de red o falta del secreto bloquean la operación con opción de reintento.
 
 `TURNSTILE_SITE_KEY` es pública y está en `wrangler.jsonc`; `TURNSTILE_SECRET_KEY` se guarda como secreto del Worker. El widget real solo admite `dentection.natalia-moreno-mon.workers.dev`, en modo Managed y sin pre-clearance. Para otro dominio, actualiza los hostnames permitidos del widget. Nunca publiques el secreto en Git ni uses claves de prueba en producción.
 

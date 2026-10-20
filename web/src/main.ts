@@ -2,7 +2,6 @@ import './styles.css';
 import {prepareChallenge,getChallengeToken,resetChallenge,removeChallenge} from './turnstile';
 import {api,ApiError,saveAnalysis,needsNoteSave} from './api';
 import {CLASS_LABELS,MODEL_VERSION,type Study,type Profile} from './types';
-import type {Detection} from './detection';
 
 const $=<T extends HTMLElement=HTMLElement>(id:string)=>document.getElementById(id) as T;
 const iconPaths:Record<string,string>={plus:'M12 5v14M5 12h14',history:'M3 12a9 9 0 1 0 3-6.7M3 3v6h6M12 7v5l3 2',shield:'M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6l-8-3ZM8 12l3 3 5-6',upload:'M12 16V3M7 8l5-5 5 5M4 15v5a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-5',download:'M12 3v13M7 11l5 5 5-5M4 17v4h16v-4',logout:'M9 4H4v16h5M14 8l4 4-4 4M8 12h10',file:'M14 2H5v20h14V7l-5-5ZM14 2v6h5M8 13h8M8 17h6'};
@@ -10,7 +9,7 @@ for(const node of document.querySelectorAll<HTMLElement>('[data-icon]'))node.inn
 let profile:Profile|undefined,current:Study|undefined,original:Blob|undefined,image:ImageBitmap|HTMLImageElement|undefined;
 let authRecovery=false,recoveryView:'new'|'history'='new',expectedEmail:string|undefined;
 let historyCursor:string|null=null,historyTotal=0;
-let studies:Study[]=[],busy=false,selected:number|undefined,zoom=1,canRetry=false,objectURL:string|undefined;
+let studies:Study[]=[],busy=false,selected:number|undefined,zoom=1,canRetry=false;
 const notes=$<HTMLTextAreaElement>('notes'),input=$<HTMLInputElement>('image-input');
 const date=(value?:string)=>value?new Date(value).toLocaleString('es-CO',{dateStyle:'medium',timeStyle:'short'}):'Análisis actual';
 const percent=(n:number)=>(n*100).toFixed(1)+' %';
@@ -33,7 +32,7 @@ async function operation(fn:()=>Promise<void>){if(busy)return;busy=true;actions(
 function canLeave(){return !current||(!needsNoteSave(current,notes.value)&&current.status==='ready')||confirm('Hay cambios o un estudio sin guardar. ¿Quieres salir de esta revisión?');}
 function activate(view:'new'|'history'){$('new-view').hidden=view!=='new';$('history-view').hidden=view!=='history';$('nav-new').classList.toggle('active',view==='new');$('nav-history').classList.toggle('active',view==='history');
  $('nav-new').setAttribute('aria-current',view==='new'?'page':'false');$('nav-history').setAttribute('aria-current',view==='history'?'page':'false');}
-function reset(){current=undefined;original=undefined;if(image&&'close'in image)image.close();image=undefined;if(objectURL)URL.revokeObjectURL(objectURL);objectURL=undefined;selected=undefined;canRetry=false;notes.value='';input.value='';$('upload-panel').hidden=false;$('analysis-workspace').hidden=true;activate('new');clearNotice();actions();}
+function reset(){current=undefined;original=undefined;if(image&&'close'in image)image.close();image=undefined;selected=undefined;canRetry=false;notes.value='';input.value='';$('upload-panel').hidden=false;$('analysis-workspace').hidden=true;activate('new');clearNotice();actions();}
 function newStudy(){if(!busy&&canLeave())reset();}
 for(const id of ['nav-new','new-study','history-new'])$(id).addEventListener('click',newStudy);
 $('nav-history').addEventListener('click',()=>{if(!busy&&canLeave()){activate('history');clearNotice();void operation(refreshHistory);}});
@@ -140,9 +139,16 @@ function setAuthMode(value:boolean){
  $<HTMLInputElement>('auth-password').minLength=value?15:1;$<HTMLInputElement>('auth-password').autocomplete=value?'new-password':'current-password';$('auth-error').hidden=true;
  $<HTMLInputElement>('auth-confirm').value='';prepareAuthChallenge();
 }
+function showAuthScreen(show:boolean){
+ document.body.classList.toggle('auth-screen',show);
+ (document.querySelector('.sidebar') as HTMLElement).hidden=show;
+ (document.querySelector('.topbar') as HTMLElement).hidden=show;
+ $('auth-brand').hidden=!show;
+ if(show){$('new-view').hidden=true;$('history-view').hidden=true;}
+}
 function showSessionRecovery(){
  if(!authRecovery)recoveryView=$('history-view').hidden?'new':'history';
- authRecovery=true;expectedEmail=profile?.email;setAuthMode(false);
+ authRecovery=true;expectedEmail=profile?.email;showAuthScreen(true);setAuthMode(false);
  $('auth-panel').hidden=false;$('new-view').hidden=true;$('history-view').hidden=true;$('auth-switch').hidden=true;$('auth-switch-caption').hidden=true;
  $('auth-title').textContent='Recupera tu sesión';$('auth-description').textContent='Vuelve a iniciar sesión con la misma cuenta. Conservaremos la radiografía y las observaciones para que puedas reintentar el guardado.';
  const email=$<HTMLInputElement>('auth-email');email.value=expectedEmail||'';email.readOnly=!!expectedEmail;
@@ -160,7 +166,7 @@ $('auth-form').addEventListener('submit',event=>{event.preventDefault();if(authS
  const signedIn=await api<Profile>('/me');
  if(authRecovery&&expectedEmail&&signedIn.email!==expectedEmail){await api('/auth/logout',{method:'POST'});throw new Error('Inicia sesión con la misma cuenta para recuperar este trabajo.');}
  profile=signedIn;$('account-name').textContent=profile.name;$('account-email').textContent=profile.email;$('account-avatar').textContent=profile.name.slice(0,1).toUpperCase();
- $('auth-panel').hidden=true;removeChallenge();challengeReady=false;
+ $('auth-panel').hidden=true;showAuthScreen(false);removeChallenge();challengeReady=false;
  if(authRecovery){authRecovery=false;activate(recoveryView);notice('Sesión recuperada. Ya puedes reintentar el guardado o descargar el informe.','success');}
  else{activate('new');await refreshHistory();}
  actions();}
@@ -169,8 +175,8 @@ $('auth-form').addEventListener('submit',event=>{event.preventDefault();if(authS
  })();});
 $('logout').addEventListener('click',event=>{event.preventDefault();if(busy||!canLeave())return;void operation(async()=>{await api('/auth/logout',{method:'POST'});current=undefined;location.reload();});});
 async function init(){
- try{profile=await api<Profile>('/me');$('account-name').textContent=profile.name;$('account-email').textContent=profile.email;$('account-avatar').textContent=profile.name.slice(0,1).toUpperCase();await refreshHistory();}
- catch(error){if(error instanceof ApiError&&error.status===401){$('auth-panel').hidden=false;$('new-view').hidden=true;$('nav-new').setAttribute('disabled','');$('nav-history').setAttribute('disabled','');$('account-name').textContent='Sesión requerida';prepareAuthChallenge();}else notice(errorMessage(error),'error');}
- actions();
+ try{profile=await api<Profile>('/me');$('account-name').textContent=profile.name;$('account-email').textContent=profile.email;$('account-avatar').textContent=profile.name.slice(0,1).toUpperCase();showAuthScreen(false);activate('new');await refreshHistory();}
+ catch(error){if(error instanceof ApiError&&error.status===401){showAuthScreen(true);$('auth-panel').hidden=false;$('new-view').hidden=true;$('nav-new').setAttribute('disabled','');$('nav-history').setAttribute('disabled','');$('account-name').textContent='Sesión requerida';prepareAuthChallenge();}else notice(errorMessage(error),'error');}
+ $('session-status').hidden=true;actions();
 }
 void init();

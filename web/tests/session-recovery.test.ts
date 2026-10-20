@@ -31,10 +31,14 @@ beforeEach(async()=>{
 afterEach(()=>{vi.restoreAllMocks();vi.unstubAllGlobals();});
 async function loginAgain(){
  expect((document.getElementById('auth-panel') as HTMLElement).hidden).toBe(false);
+ expect((document.querySelector('.sidebar') as HTMLElement).hidden).toBe(true);
+ expect((document.querySelector('.topbar') as HTMLElement).hidden).toBe(true);
  expect((document.getElementById('auth-email') as HTMLInputElement).value).toBe(profile.email);
  (document.getElementById('auth-password') as HTMLInputElement).value='A long password for testing!';
  document.getElementById('auth-form')!.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}));
  await waitFor(()=>expect((document.getElementById('auth-panel') as HTMLElement).hidden).toBe(true));
+ expect((document.querySelector('.sidebar') as HTMLElement).hidden).toBe(false);
+ expect((document.querySelector('.topbar') as HTMLElement).hidden).toBe(false);
 }
 it('preserves an analyzed image and its identifier when a save requires reauthentication',async()=>{
  expired=true;const input=document.getElementById('image-input') as HTMLInputElement;

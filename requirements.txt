@@ -1,7 +1,6 @@
+# Optional Python tooling for scripts/export_model.py; not needed by the hosted app.
 ultralytics
-streamlit
-torch
+onnx
+onnxruntime
 opencv-python-headless
-streamlit-option-menu
-fpdf
-pandas
+numpy

@@ -1,18 +1,20 @@
 <!doctype html>
 <html lang="es">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="theme-color" content="#274675"><meta name="description" content="Dentection: revisión asistida de radiografías panorámicas dentales, observaciones e informes."><title>Dentection · Revisión de radiografías</title></head>
-<body>
+<body class="auth-screen">
 <div class="app-shell">
- <aside class="sidebar" aria-label="Navegación principal">
+ <aside class="sidebar" hidden aria-label="Navegación principal">
   <a class="brand" href="/" aria-label="Dentection, inicio"><svg viewBox="0 0 32 36" fill="none" aria-hidden="true"><path d="M16 5C8-1 1 4 3 13l4 17c1 5 4 4 5 0l2-8c.5-3 3.5-3 4 0l2 8c1 4 4 5 5 0l4-17c2-9-5-14-13-8Z" stroke="currentColor" stroke-width="2.4"/><path d="M11 7c3 1 7 1 10-1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span>Dentection</span></a>
   <nav><button id="nav-new" class="nav-button active" aria-current="page"><span data-icon="plus"></span>Nuevo análisis</button><button id="nav-history" class="nav-button"><span data-icon="history"></span>Mis radiografías<span id="history-count" class="count">0</span></button></nav>
   <div class="sidebar-bottom"><span class="privacy-mark" data-icon="shield"></span><p>Tus estudios son privados.<br><span>Solo tu cuenta puede acceder.</span></p></div>
  </aside>
  <div class="main-shell">
-  <header class="topbar"><div class="workspace-label">Espacio profesional</div><div class="account"><span id="account-avatar" class="avatar" aria-hidden="true">D</span><div><strong id="account-name">Conectando…</strong><span id="account-email"></span></div><a href="#" id="logout" title="Cerrar sesión" aria-label="Cerrar sesión"><span data-icon="logout"></span></a></div></header>
+  <header class="topbar" hidden><div class="workspace-label">Espacio profesional</div><div class="account"><span id="account-avatar" class="avatar" aria-hidden="true">D</span><div><strong id="account-name">Conectando…</strong><span id="account-email"></span></div><a href="#" id="logout" title="Cerrar sesión" aria-label="Cerrar sesión"><span data-icon="logout"></span></a></div></header>
   <main id="main">
+   <a id="auth-brand" class="brand auth-brand" href="/" aria-label="Dentection, inicio"><svg viewBox="0 0 32 36" fill="none" aria-hidden="true"><path d="M16 5C8-1 1 4 3 13l4 17c1 5 4 4 5 0l2-8c.5-3 3.5-3 4 0l2 8c1 4 4 5 5 0l4-17c2-9-5-14-13-8Z" stroke="currentColor" stroke-width="2.4"/><path d="M11 7c3 1 7 1 10-1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span>Dentection</span></a>
+   <p id="session-status" class="session-status" role="status">Comprobando sesión…</p>
    <div id="notification" class="notification" role="status" aria-live="polite" hidden></div>
-   <section id="auth-panel" class="auth-panel" hidden aria-labelledby="auth-title"><span class="auth-symbol" data-icon="shield"></span><h1 id="auth-title">Accede a tu espacio</h1><p id="auth-description">Tus radiografías, observaciones e informes, en una cuenta privada.</p>
+   <section id="auth-panel" class="auth-panel" hidden aria-labelledby="auth-title"><h1 id="auth-title">Accede a tu espacio</h1><p id="auth-description">Tus radiografías, observaciones e informes, en una cuenta privada.</p>
     <form id="auth-form" class="auth-form">
      <div id="register-name" hidden><label for="auth-name">Nombre profesional</label><input id="auth-name" type="text" maxlength="100" autocomplete="name"></div>
      <label for="auth-email">Correo electrónico</label><input id="auth-email" type="email" required maxlength="254" autocomplete="username" placeholder="nombre@ejemplo.com" autocapitalize="none" spellcheck="false">
@@ -22,7 +24,7 @@
      <p id="auth-error" class="auth-error" role="alert" hidden></p><button id="auth-submit" class="button primary" type="submit" disabled>Iniciar sesión</button>
     </form><div class="auth-switch-row"><span id="auth-switch-caption">¿Es tu primera visita?</span><button id="auth-switch" class="text-button">Crear una cuenta</button></div><p id="auth-account-help" class="auth-account-help">La recuperación de contraseña aún no está disponible. Conserva tus datos de acceso.</p>
    </section>
-   <section id="new-view">
+   <section id="new-view" hidden>
     <div class="page-heading"><div><h1>Revisión de radiografías</h1><p>Analiza una panorámica y reúne tus observaciones en un informe.</p></div><span class="model-tag">Modelo dental · YOLOv8n</span></div>
     <div id="upload-panel" class="upload-layout">
      <div class="upload-zone" id="drop-zone"><div class="upload-symbol" data-icon="upload"></div><h2>Carga una radiografía panorámica</h2><p>Arrastra tu imagen aquí o selecciónala desde tu dispositivo.</p><label for="image-input" class="button primary">Seleccionar radiografía</label><input id="image-input" type="file" accept="image/png,image/jpeg,.jpg,.jpeg,.png" class="file-input"><span class="file-spec">JPG o PNG · hasta 5 MiB</span><div class="threshold-setup"><label for="analysis-threshold">Confianza mínima del análisis <output id="analysis-threshold-value">25 %</output></label><input id="analysis-threshold" type="range" min="5" max="90" step="5" value="25"><span>Un umbral menor muestra más detecciones, incluidas las de menor confianza.</span></div></div>

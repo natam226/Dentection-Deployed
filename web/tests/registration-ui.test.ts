@@ -21,10 +21,16 @@ beforeEach(async()=>{
 afterEach(()=>{vi.restoreAllMocks();vi.unstubAllGlobals();});
 const submit=()=>document.getElementById('auth-form')!.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}));
 it('offers open registration with confirmation and sends the challenge without an invitation',async()=>{
+ expect((document.querySelector('.sidebar') as HTMLElement).hidden).toBe(true);
+ expect((document.querySelector('.topbar') as HTMLElement).hidden).toBe(true);
+ expect(document.body.classList.contains('auth-screen')).toBe(true);
  expect(document.getElementById('auth-invitation')).toBeNull();
  const confirm=document.getElementById('auth-confirm') as HTMLInputElement;expect(confirm).not.toBeNull();confirm.value='A long password for this account!';submit();
  await vi.waitFor(()=>expect(bodies).toHaveLength(1));expect(bodies[0].turnstileToken).toBe('valid-register');expect(bodies[0]).not.toHaveProperty('invitation');
  await vi.waitFor(()=>expect((document.getElementById('auth-panel') as HTMLElement).hidden).toBe(true));
+ expect((document.querySelector('.sidebar') as HTMLElement).hidden).toBe(false);
+ expect((document.querySelector('.topbar') as HTMLElement).hidden).toBe(false);
+ expect(document.body.classList.contains('auth-screen')).toBe(false);
 });
 it('prevents mismatched passwords and expired challenges from reaching the server',async()=>{
  const confirm=document.getElementById('auth-confirm') as HTMLInputElement;expect(confirm).not.toBeNull();confirm.value='Different password';submit();
