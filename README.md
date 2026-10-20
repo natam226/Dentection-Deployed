@@ -1,3 +1,15 @@
+# Dentection en Cloudflare
+
+Aplicación: https://dentection.natalia-moreno-mon.workers.dev
+
+La versión web está en `web/`: cuentas profesionales por invitación, historial privado, análisis del modelo original en el navegador, resumen y detalle de detecciones, visor con zoom, observaciones de texto y descarga de PDF. Funciona en navegador de escritorio o móvil; no necesita instalar una aplicación.
+
+La configuración y los límites del prototipo están documentados en [web/README.md](web/README.md). Los scripts Python originales se conservan como referencia de la versión local.
+
+---
+
+## Documentación de la versión local original
+
 # 🦷 Dentection - Sistema de Detección de Anomalías Dentales
 
 ![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)

@@ -8,9 +8,6 @@ importers:
 
   .:
     dependencies:
-      jose:
-        specifier: ^6.2.12
-        version: 6.2.12
       jspdf:
         specifier: ^4.2.1
         version: 4.2.1
@@ -1004,9 +1001,6 @@ packages:
 
   iobuffer@5.4.0:
     resolution: {integrity: sha512-DRebOWuqDvxunfkNJAlc3IzWIPD5xVxwUNbHr7xKB8E6aLJxIPfNX3CoMJghcFjpv6RWQsrcJbghtEwSPoJqMA==}
-
-  jose@6.2.12:
-    resolution: {integrity: sha512-9NiFmJEex0sy2Dk58j2UGBSHgUs2ypF9eZSu4L6vjOX3Dp96Sw1F3uL+H+D1sx02jZZdzUT0HgvCy59CuvXcWw==}
 
   jspdf@4.2.1:
     resolution: {integrity: sha512-YyAXyvnmjTbR4bHQRLzex3CuINCDlQnBqoSYyjJwTP2x9jDLuKDzy7aKUl0hgx3uhcl7xzg32agn5vlie6HIlQ==}
@@ -2003,8 +1997,6 @@ snapshots:
     optional: true
 
   iobuffer@5.4.0: {}
-
-  jose@6.2.12: {}
 
   jspdf@4.2.1:
     dependencies:

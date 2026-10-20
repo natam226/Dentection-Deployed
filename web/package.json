@@ -4,16 +4,16 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite --host 127.0.0.1",
-    "build": "tsc --noEmit && vite build",
+    "dev": "node scripts/copy-runtime.mjs && vite --host 127.0.0.1",
+    "build": "node scripts/copy-runtime.mjs && tsc --noEmit && tsc --noEmit -p tsconfig.worker.json && vite build",
     "test": "vitest run",
     "preview": "wrangler dev --ip 127.0.0.1",
     "deploy": "pnpm build && wrangler deploy",
     "db:local": "wrangler d1 migrations apply dentection-db --local",
-    "db:remote": "wrangler d1 migrations apply dentection-db --remote"
+    "db:remote": "wrangler d1 migrations apply dentection-db --remote",
+    "preview:local": "wrangler dev --config wrangler.local.jsonc --ip 127.0.0.1"
   },
   "dependencies": {
-    "jose": "^6.2.12",
     "jspdf": "^4.2.1",
     "onnxruntime-web": "^1.30.0"
   },

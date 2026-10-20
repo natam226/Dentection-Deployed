@@ -15,11 +15,11 @@ Subir una radiografia, consultar detecciones generales y detalladas del modelo e
 
 ## Stack
 
-Propuesta aprobada en chat: TypeScript y Vite en Cloudflare Workers, D1, KV, Access OTP; modelo YOLOv8n existente exportado a ONNX y ejecutado en el navegador. Conservar Streamlit como referencia. Validar primero equivalencia del modelo.
+Propuesta aprobada en chat: TypeScript y Vite en Cloudflare Workers, D1, KV, cuentas por invitación y contraseña; modelo YOLOv8n existente exportado a ONNX y ejecutado en el navegador. Conservar Streamlit como referencia. Validar primero equivalencia del modelo.
 
 ## Capabilities and Constraints
 
-Primera version en dos horas, usando cuotas gratuitas y sin activar planes de pago. Un estudio JPG/PNG de hasta 5 MiB por analisis. Sin nuevo entrenamiento, aplicaciones nativas, prescripciones automaticas ni envio al paciente. Login por correo autorizado y codigo temporal, historial por profesional, notas de texto y PDF. Nombre de paciente no obligatorio.
+Primera version en dos horas, usando cuotas gratuitas y sin activar planes de pago. Un estudio JPG/PNG de hasta 5 MiB por analisis. Sin nuevo entrenamiento, aplicaciones nativas, prescripciones automaticas ni envio al paciente. Login propio por invitación y contraseña (cambio aprobado al requerir tarjeta el alta de Access), historial por profesional, notas de texto y PDF. Nombre de paciente no obligatorio.
 
 ## Evidence on Hand
 

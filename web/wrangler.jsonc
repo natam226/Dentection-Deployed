@@ -1,0 +1,34 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "dentection",
+  "main": "worker/index.ts",
+  "compatibility_date": "2026-08-01",
+  "workers_dev": true,
+  "preview_urls": false,
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": [
+      "/api/*"
+    ]
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "dentection-db",
+      "database_id": "a94b1618-9e44-49d8-872c-0a85b374dcce",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "kv_namespaces": [
+    {
+      "binding": "IMAGES",
+      "id": "4edcba8cb1d7439096554df59b6e5d04"
+    }
+  ],
+  "observability": {
+    "enabled": false
+  },
+  "account_id": "afdd2519d952ca36588745284b2f6d00"
+}

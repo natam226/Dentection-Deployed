@@ -1,0 +1,8 @@
+import {copyFile,mkdir,access} from 'node:fs/promises';
+import {createRequire} from 'node:module';
+import {dirname,join} from 'node:path';
+const require=createRequire(import.meta.url);
+const source=dirname(require.resolve('onnxruntime-web/wasm'));
+await mkdir('public/ort',{recursive:true});
+for(const name of ['ort-wasm-simd-threaded.mjs','ort-wasm-simd-threaded.wasm'])await copyFile(join(source,name),join('public/ort',name));
+await access('public/model/model.onnx').catch(()=>{throw new Error('Missing model: run scripts/export_model.py from repository root first.');});

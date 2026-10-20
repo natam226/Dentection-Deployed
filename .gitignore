@@ -13,3 +13,4 @@ web/public/model/*.onnx
 web/public/model/*.onnx.data
 web/public/proof/
 modelo/*.onnx
+web/public/ort/

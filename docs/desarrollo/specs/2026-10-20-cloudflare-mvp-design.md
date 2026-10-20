@@ -76,3 +76,8 @@ Tras revisar y aprobar este documento: crear un plan breve, comprobar ONNX prime
 - https://developers.cloudflare.com/workers/platform/pricing/
 - https://onnxruntime.ai/docs/tutorials/web/
 - https://docs.ultralytics.com/integrations/onnx/
+
+
+## Cambio aprobado durante implementación, 20 de octubre de 2026
+
+Cloudflare Zero Trust Free exigió tarjeta, datos de facturación y autorización de cargos por exceso. La usuaria eligió explícitamente «Login propio sin tarjeta». Esta decisión sustituye los puntos de Access/OTP anteriores: cuentas por invitación personal vinculada al correo, contraseña elegida en la web, sesiones opacas de 8 horas y autorización por propietario en D1. No se activó Zero Trust ni facturación. No hay verificación de correo ni recuperación por correo en esta primera versión; la administración gestiona invitaciones y recuperación de acceso. El resto del flujo aprobado se conserva.
