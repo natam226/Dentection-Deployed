@@ -1,7 +1,8 @@
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { Miniflare } from 'miniflare';
 import { readFileSync,readdirSync } from 'node:fs';
 import { createHandler } from '../worker/index';
+import {authenticate} from '../worker/password-auth';
 import type { Env } from '../worker/types';
 
 let mf: Miniflare, env: Env;
@@ -153,4 +154,18 @@ describe('private study API',()=>{
     }while(cursor);
     expect(seen.size).toBe(201);expect(ids.every(id=>seen.has(id))).toBe(true);
   },30000);
+  it('keeps studies private between two publicly registered real sessions',async()=>{
+    const originalFetch=globalThis.fetch;
+    const verification=vi.spyOn(globalThis,'fetch').mockImplementation((input,options)=>String(input)==='https://challenges.cloudflare.com/turnstile/v0/siteverify'?Promise.resolve(Response.json({success:true,hostname:'app.test',action:'register'})):originalFetch(input,options));
+    try{
+      const production=createHandler(authenticate),configured={...env,TURNSTILE_SECRET_KEY:'test-secret',TURNSTILE_SITE_KEY:'test-site'};
+      async function signup(email:string){const response=await production(request('/auth/register','POST',{name:'Public professional',email,password:'A long password for a new professional!',turnstileToken:'verified-token'}),configured);expect(response.status).toBe(201);return response.headers.get('Set-Cookie')!;}
+      const a=await signup('public-a@example.test'),b=await signup('public-b@example.test');
+      const data=await payload(),save=request('/studies','POST',data);save.headers.set('Cookie',a);expect((await production(save,configured)).status).toBe(201);
+      for(const [path,method,body]of [['/studies/'+data.id,'GET',undefined],['/studies/'+data.id+'/image','GET',undefined],['/studies/'+data.id+'/notes','PATCH',{notes:'intrusion',revision:0}],['/studies/'+data.id,'DELETE',undefined]] as const){const req=request(path,method,body);req.headers.set('Cookie',b);expect((await production(req,configured)).status).toBe(404);}
+      const history=request('/studies');history.headers.set('Cookie',b);expect((await (await production(history,configured)).json() as any).studies).toHaveLength(0);
+      const own=request('/studies/'+data.id);own.headers.set('Cookie',a);expect((await production(own,configured)).status).toBe(200);
+    }finally{verification.mockRestore();}
+  },30000);
+
 });

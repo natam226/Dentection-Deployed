@@ -1,4 +1,5 @@
 import './styles.css';
+import {prepareChallenge,getChallengeToken,resetChallenge,removeChallenge} from './turnstile';
 import {api,ApiError,saveAnalysis,needsNoteSave} from './api';
 import {CLASS_LABELS,MODEL_VERSION,type Study,type Profile} from './types';
 import type {Detection} from './detection';
@@ -121,41 +122,55 @@ $('download-pdf').addEventListener('click',()=>void operation(async()=>{
  const {createReport}=await import('./pdf');const pdf=await createReport(current,profile,canvas.toDataURL('image/jpeg',.94));pdf.save('Informe_Dentection_'+current.id.slice(0,8)+'.pdf');notice('Informe descargado con las observaciones guardadas.','success');
 }));
 window.addEventListener('beforeunload',event=>{if(current&&(needsNoteSave(current,notes.value)||canRetry)){event.preventDefault();}});
-let registering=false;
+let registering=false,authSubmitting=false,challengeReady=false;
+function authButton(){const button=$<HTMLButtonElement>('auth-submit');button.disabled=authSubmitting||!challengeReady;button.setAttribute('aria-busy',String(authSubmitting));$<HTMLButtonElement>('auth-switch').disabled=authSubmitting;}
+function prepareAuthChallenge(){
+ challengeReady=false;authButton();
+ void prepareChallenge($('auth-challenge'),registering?'register':'login',(ready,message,retry=false)=>{
+  challengeReady=ready;$('auth-challenge-state').textContent=message;$('auth-challenge-retry').hidden=!retry;authButton();
+ });
+}
+$('auth-challenge-retry').addEventListener('click',prepareAuthChallenge);
+function setAuthMode(value:boolean){
+ registering=value;$('register-name').hidden=!value;$('register-confirm').hidden=!value;$('password-hint').hidden=!value;
+ $('auth-title').textContent=value?'Crea tu cuenta profesional':'Accede a tu espacio';
+ $('auth-description').textContent=value?'Guarda tus radiografías y reúne tu revisión en un historial privado.':'Tus radiografías, observaciones e informes, en una cuenta privada.';
+ $('auth-submit').textContent=value?'Crear cuenta':'Iniciar sesión';$('auth-switch').textContent=value?'Iniciar sesión':'Crear una cuenta';$('auth-switch-caption').textContent=value?'¿Ya tienes una cuenta?':'¿Es tu primera visita?';
+ $<HTMLInputElement>('auth-name').required=value;$<HTMLInputElement>('auth-confirm').required=value;
+ $<HTMLInputElement>('auth-password').minLength=value?15:1;$<HTMLInputElement>('auth-password').autocomplete=value?'new-password':'current-password';$('auth-error').hidden=true;
+ $<HTMLInputElement>('auth-confirm').value='';prepareAuthChallenge();
+}
 function showSessionRecovery(){
  if(!authRecovery)recoveryView=$('history-view').hidden?'new':'history';
- authRecovery=true;expectedEmail=profile?.email;registering=false;
- $('auth-panel').hidden=false;$('new-view').hidden=true;$('history-view').hidden=true;
- $('register-name').hidden=true;$('register-invitation').hidden=true;$('auth-switch').hidden=true;
+ authRecovery=true;expectedEmail=profile?.email;setAuthMode(false);
+ $('auth-panel').hidden=false;$('new-view').hidden=true;$('history-view').hidden=true;$('auth-switch').hidden=true;$('auth-switch-caption').hidden=true;
  $('auth-title').textContent='Recupera tu sesión';$('auth-description').textContent='Vuelve a iniciar sesión con la misma cuenta. Conservaremos la radiografía y las observaciones para que puedas reintentar el guardado.';
  const email=$<HTMLInputElement>('auth-email');email.value=expectedEmail||'';email.readOnly=!!expectedEmail;
- $<HTMLInputElement>('auth-name').required=false;$<HTMLInputElement>('auth-invitation').required=false;
- $<HTMLInputElement>('auth-password').minLength=1;$<HTMLInputElement>('auth-password').autocomplete='current-password';$('auth-submit').textContent='Iniciar sesión';
 }
-$('auth-switch').addEventListener('click',()=>{
- registering=!registering;$('register-name').hidden=!registering;$('register-invitation').hidden=!registering;
- $('auth-title').textContent=registering?'Crea tu cuenta profesional':'Accede a tu espacio';
- $('auth-submit').textContent=registering?'Crear cuenta':'Iniciar sesión';$('auth-switch').textContent=registering?'Ya tengo una cuenta':'Tengo una invitación';
- $<HTMLInputElement>('auth-name').required=registering;$<HTMLInputElement>('auth-invitation').required=registering;
- $<HTMLInputElement>('auth-password').minLength=registering?15:1;$<HTMLInputElement>('auth-password').autocomplete=registering?'new-password':'current-password';$('auth-error').hidden=true;
-});
-$('auth-form').addEventListener('submit',event=>{event.preventDefault();void(async()=>{
- const button=$<HTMLButtonElement>('auth-submit');button.disabled=true;button.textContent=registering?'Creando cuenta…':'Iniciando sesión…';$('auth-error').hidden=true;
- try{await api('/auth/'+(registering?'register':'login'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:$<HTMLInputElement>('auth-email').value,password:$<HTMLInputElement>('auth-password').value,name:$<HTMLInputElement>('auth-name').value,invitation:$<HTMLInputElement>('auth-invitation').value})});$<HTMLInputElement>('auth-password').value='';
+$('auth-switch').addEventListener('click',()=>{if(!authSubmitting)setAuthMode(!registering);});
+$('auth-form').addEventListener('submit',event=>{event.preventDefault();if(authSubmitting)return;void(async()=>{
+ const button=$<HTMLButtonElement>('auth-submit');authSubmitting=true;authButton();button.textContent=registering?'Creando cuenta…':'Iniciando sesión…';$('auth-error').hidden=true;let attempted=false;
+ try{
+ const password=$<HTMLInputElement>('auth-password').value;
+ if(registering&&password!==$<HTMLInputElement>('auth-confirm').value)throw new Error('Las contraseñas no coinciden. Revisa ambos campos.');
+ const turnstileToken=getChallengeToken();if(!turnstileToken)throw new Error('Completa la verificación de seguridad para continuar.');
+ attempted=true;
+ await api('/auth/'+(registering?'register':'login'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:$<HTMLInputElement>('auth-email').value.trim(),password,name:$<HTMLInputElement>('auth-name').value,turnstileToken})});
+ $<HTMLInputElement>('auth-password').value='';$<HTMLInputElement>('auth-confirm').value='';
  const signedIn=await api<Profile>('/me');
  if(authRecovery&&expectedEmail&&signedIn.email!==expectedEmail){await api('/auth/logout',{method:'POST'});throw new Error('Inicia sesión con la misma cuenta para recuperar este trabajo.');}
  profile=signedIn;$('account-name').textContent=profile.name;$('account-email').textContent=profile.email;$('account-avatar').textContent=profile.name.slice(0,1).toUpperCase();
- $('auth-panel').hidden=true;
+ $('auth-panel').hidden=true;removeChallenge();challengeReady=false;
  if(authRecovery){authRecovery=false;activate(recoveryView);notice('Sesión recuperada. Ya puedes reintentar el guardado o descargar el informe.','success');}
  else{activate('new');await refreshHistory();}
  actions();}
- catch(error){$('auth-error').textContent=error instanceof Error?error.message:'No se pudo iniciar sesión.';$('auth-error').hidden=false;}
- finally{button.disabled=false;button.textContent=registering?'Crear cuenta':'Iniciar sesión';}
+ catch(error){$('auth-error').textContent=error instanceof Error?error.message:'No se pudo iniciar sesión.';$('auth-error').hidden=false;if(attempted)resetChallenge();}
+ finally{authSubmitting=false;authButton();button.textContent=registering?'Crear cuenta':'Iniciar sesión';}
  })();});
 $('logout').addEventListener('click',event=>{event.preventDefault();if(busy||!canLeave())return;void operation(async()=>{await api('/auth/logout',{method:'POST'});current=undefined;location.reload();});});
 async function init(){
  try{profile=await api<Profile>('/me');$('account-name').textContent=profile.name;$('account-email').textContent=profile.email;$('account-avatar').textContent=profile.name.slice(0,1).toUpperCase();await refreshHistory();}
- catch(error){if(error instanceof ApiError&&error.status===401){$('auth-panel').hidden=false;$('new-view').hidden=true;$('nav-new').setAttribute('disabled','');$('nav-history').setAttribute('disabled','');$('account-name').textContent='Sesión requerida';}else notice(errorMessage(error),'error');}
+ catch(error){if(error instanceof ApiError&&error.status===401){$('auth-panel').hidden=false;$('new-view').hidden=true;$('nav-new').setAttribute('disabled','');$('nav-history').setAttribute('disabled','');$('account-name').textContent='Sesión requerida';prepareAuthChallenge();}else notice(errorMessage(error),'error');}
  actions();
 }
 void init();

@@ -17,3 +17,7 @@ Al iniciar se explica que el calculo se realiza en el navegador. El primer anali
 ## Movimiento
 
 Solo transiciones breves de foco y color y un indicador de actividad durante operaciones. Respetar prefers-reduced-motion. Sin decoraciones, fotografias de stock ni cifras comerciales.
+
+## Acceso y registro
+
+Formulario Operate de una columna sobre superficie blanca y fondo azul claro. Mantener #274675 en títulos, acciones y foco. Registro abierto con nombre, correo, contraseña y confirmación; inicio de sesión existente. Turnstile con tema claro, ancho flexible, idioma español y estado visible de carga, comprobación, expiración y reintento. Inputs de 16px en móvil; sin cambiar la paleta ni decorar la pantalla con ilustraciones.

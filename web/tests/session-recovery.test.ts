@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 import {beforeEach,afterEach,it,expect,vi} from 'vitest';
 import {readFileSync} from 'node:fs';import {URL as NodeURL} from 'node:url';import {webcrypto} from 'node:crypto';
+vi.mock('../src/turnstile',()=>({prepareChallenge:async(_c:any,_a:any,changed:any)=>changed(true,'Verificación completada.'),getChallengeToken:()=> 'valid-login',resetChallenge:()=>{},removeChallenge:()=>{}}));
 vi.mock('../src/inference',()=>({analyze:async()=>[{classId:6,confidence:.8,box:[1,1,9,9]}]}));
 let expired=false,saved:any,profile={email:'professional@example.test',name:'Professional'},requests:string[]=[],postedIds:string[]=[];
 const existing={id:'12345678-1234-4123-8123-123456789abc',filename:'saved.png',mimeType:'image/png',size:10,width:10,height:10,status:'ready',modelVersion:'dental-yolov8n-2025',parameters:{confidence:.25,iou:.7},detections:[],notes:'Original',revision:0};

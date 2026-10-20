@@ -4,7 +4,7 @@ URL: https://dentection.natalia-moreno-mon.workers.dev
 
 ## Flujo
 
-1. El administrador genera una invitación vinculada a un correo. El profesional elige su nombre y contraseña de al menos 15 caracteres.
+1. El profesional pulsa «Crear una cuenta», escribe nombre, correo y una contraseña de al menos 15 caracteres, la confirma y completa Turnstile. No se necesita invitación.
 2. Inicia sesión, selecciona una imagen panorámica JPG/PNG (hasta 5 MiB y 40 megapíxeles) y el umbral de confianza.
 3. El navegador descarga el modelo una vez y ejecuta la inferencia localmente. Guarda original, parámetros y resultados en Cloudflare.
 4. Puede filtrar y seleccionar hallazgos, usar zoom, escribir observaciones y descargarlas junto con los resultados y la imagen en PDF.
@@ -15,11 +15,11 @@ URL: https://dentection.natalia-moreno-mon.workers.dev
 - Vite + TypeScript + ONNX Runtime Web (WASM, un hilo) para el modelo YOLOv8n existente; no hay reentrenamiento.
 - Workers Static Assets para interfaz, modelo y fuentes.
 - Worker API con sesiones opacas de 8 horas; cookie `__Host-`, Secure, HttpOnly, SameSite=Strict. Solo se guarda el hash del token de sesión.
-- D1 para cuentas, invitaciones, sesiones, estudios, notas, cuotas y límites de intentos.
+- D1 para cuentas, sesiones, estudios, notas, cuotas y límites de intentos.
 - KV para originales; el API autoriza cada lectura por propietario y responde `private, no-store`.
 - jsPDF con fuente Noto Sans local para acentos y documentos de varias páginas.
 
-No se activó Zero Trust/Access: su alta gratuita solicitó tarjeta y la usuaria eligió login propio. No hay registro público ni proveedor de correo/OTP. El correo identifica la cuenta invitada; no se presenta como verificado. Invitaciones y recuperación de acceso requieren administración. Nunca solicites contraseñas por chat.
+No se activó Zero Trust/Access: su alta gratuita solicitó tarjeta y la usuaria eligió login propio. El registro es público y Turnstile protege registro e inicio de sesión. No hay proveedor de correo/OTP. El correo identifica la cuenta; no se presenta como verificado. La recuperación de acceso sigue pendiente de un procedimiento administrativo. Nunca solicites contraseñas por chat.
 
 ## Ejecutar y verificar
 
@@ -49,6 +49,7 @@ Los IDs del Worker/D1/KV ya apuntan a los recursos de esta aplicación en la cue
 pnpm exec wrangler login
 pnpm exec wrangler d1 migrations apply dentection-db --remote
 pnpm exec wrangler secret put AUTH_PEPPER
+pnpm exec wrangler secret put TURNSTILE_SECRET_KEY
 pnpm run deploy
 ```
 
@@ -58,15 +59,17 @@ Las migraciones se aplicaron a la base remota. Las muestras de equivalencia se g
 
 El archivo ONNX y el runtime WASM se generan localmente y están ignorados por Git; `pnpm build` avisa si falta el modelo. Los pesos `.pt` originales están en el repositorio.
 
-## Invitar profesionales
+## Registro abierto y Turnstile
 
-Desde `web/`, con Wrangler autorizado:
+La pantalla ofrece «Iniciar sesión» y «Crear una cuenta». El Worker valida cada token con Siteverify, comprueba `success`, el hostname de la solicitud y la acción `register` o `login`. Tokens ausentes, falsos, vencidos, repetidos o de otra acción/dominio no crean cuentas ni sesiones. Fallos de red o falta del secreto bloquean la operación con opción de reintento.
 
-```powershell
-node scripts/invite.mjs profesional@ejemplo.com C:\ruta\privada\invitacion.txt
-```
+`TURNSTILE_SITE_KEY` es pública y está en `wrangler.jsonc`; `TURNSTILE_SECRET_KEY` se guarda como secreto del Worker. El widget real solo admite `dentection.natalia-moreno-mon.workers.dev`, en modo Managed y sin pre-clearance. Para otro dominio, actualiza los hostnames permitidos del widget. Nunca publiques el secreto en Git ni uses claves de prueba en producción.
 
-El script genera un código de 256 bits, guarda solo su hash en D1 y entrega el código en el archivo indicado. Es personal, de un solo uso y vence en 7 días. No subas invitaciones al repositorio. Para recuperación de contraseña, el administrador debe implementar o ejecutar un procedimiento seguro de restablecimiento que conserve el identificador del profesional y revoque sus sesiones; esta versión no tiene recuperación por correo.
+Cada registro crea perfil y cuenta en una transacción; un correo duplicado no deja perfiles huérfanos. Las cuentas anteriores conservan sus IDs, contraseñas y estudios. La tabla antigua de invitaciones queda sin uso para evitar modificar datos de las cuentas existentes.
+
+El correo no se verifica por OTP y no se comprueba una licencia profesional. Turnstile reduce automatización; no acredita la identidad profesional. No se ha añadido recuperación de contraseña por correo.
+
+Pruebas locales: `pnpm test` usa un Siteverify simulado en el límite de red y bases D1 reales de Miniflare para verificar fallos, duplicados y separación entre cuentas. El emulador visual `preview:local` conserva su identidad ficticia solo en localhost para revisar el área de radiografías. La verificación real se comprueba en el dominio publicado con el widget real; no hay bypass de Turnstile en la configuración de producción.
 
 ## Límites y recuperación
 

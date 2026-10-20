@@ -30,5 +30,8 @@
   "observability": {
     "enabled": false
   },
-  "account_id": "afdd2519d952ca36588745284b2f6d00"
+  "account_id": "afdd2519d952ca36588745284b2f6d00",
+  "vars": {
+    "TURNSTILE_SITE_KEY": "0x4AAAAAAFeW5sjEHjiv-nxx"
+  }
 }

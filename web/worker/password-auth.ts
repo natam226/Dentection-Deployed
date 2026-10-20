@@ -32,8 +32,25 @@ export async function authenticate(request:Request,env:Env):Promise<Identity>{
  const row=await env.DB.prepare('SELECT p.id,p.email FROM sessions s JOIN professionals p ON p.id=s.user_id WHERE s.token_hash=? AND s.expires_at>unixepoch()').bind(await sha256(raw)).first<Identity>();
  if(!row)throw new Error('Authentication required');return row;
 }
+export async function verifyTurnstile(request:Request,env:Env,response:unknown,action:string){
+ if(!env.TURNSTILE_SECRET_KEY)throw new HttpError(503,'La verificación de seguridad no está disponible. Reintenta más tarde.');
+ check(typeof response==='string'&&response.length>0&&response.length<=2048,'Completa la verificación de seguridad antes de continuar.');
+ const body=new URLSearchParams({secret:env.TURNSTILE_SECRET_KEY,response});
+ const ip=request.headers.get('CF-Connecting-IP');if(ip)body.set('remoteip',ip);
+ let result:any;
+ try{
+  const verification=await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify',{method:'POST',body,signal:AbortSignal.timeout(8000)});
+  if(!verification.ok)throw new Error('Verification unavailable');
+  result=await verification.json();
+ }catch{throw new HttpError(503,'No pudimos comprobar la verificación de seguridad. Reintenta.');}
+ if(result?.success!==true||result.hostname!==new URL(request.url).hostname||result.action!==action)throw new HttpError(403,'La verificación de seguridad venció o no es válida. Complétala de nuevo.');
+}
 export async function handleAuth(request:Request,env:Env):Promise<Response>{
  try{
+  if(new URL(request.url).pathname==='/api/auth/config'&&request.method==='GET'){
+   if(!env.TURNSTILE_SITE_KEY||!env.TURNSTILE_SECRET_KEY)throw new HttpError(503,'La verificación de seguridad no está disponible.');
+   return new Response(JSON.stringify({siteKey:env.TURNSTILE_SITE_KEY}),{headers});
+  }
   if(request.method!=='POST')throw new HttpError(405,'Acción no disponible.');
   if(request.headers.get('Origin')!==new URL(request.url).origin)throw new HttpError(403,'La solicitud debe venir de esta aplicación.');
   const path=new URL(request.url).pathname.split('/').pop();
@@ -47,20 +64,16 @@ export async function handleAuth(request:Request,env:Env):Promise<Response>{
   const email=d.email.trim().toLowerCase();
   await throttle(env,'ip:'+await sha256(request.headers.get('CF-Connecting-IP')||'local'),50);
   await throttle(env,'email:'+await sha256(email),10);
+  await verifyTurnstile(request,env,d.turnstileToken,path);
   // Remove expired counters with every auth request; bounded by the 15-minute window.
   await env.DB.prepare('DELETE FROM auth_attempts WHERE expires_at<=unixepoch()').run();
   if(path==='register'){
-   check(typeof d.name==='string'&&d.name.trim().length>=2&&d.name.length<=100&&d.password.length>=15&&typeof d.invitation==='string'&&d.invitation.length<=200,'Usa tu nombre, una contraseña de al menos 15 caracteres y tu invitación.');
-   const inviteHash=await sha256(d.invitation);
-   const invitation=await env.DB.prepare('SELECT email FROM invitations WHERE token_hash=? AND used=0 AND expires_at>unixepoch()').bind(inviteHash).first<{email:string}>();
-   if(!invitation||invitation.email!==email)throw new HttpError(403,'La invitación no es válida para ese correo o ya fue utilizada.');
+   check(typeof d.name==='string'&&d.name.trim().length>=2&&d.name.length<=100&&d.password.length>=15,'Usa tu nombre y una contraseña de al menos 15 caracteres.');
    const id=crypto.randomUUID(),salt=random(),hash=await passwordHash(d.password,salt,env.AUTH_PEPPER);
-   const results=await env.DB.batch([
-    env.DB.prepare('INSERT INTO professionals(id,email,name) SELECT ?,?,? WHERE EXISTS(SELECT 1 FROM invitations WHERE token_hash=? AND used=0 AND expires_at>unixepoch())').bind(id,email,d.name.trim(),inviteHash),
-    env.DB.prepare('INSERT INTO accounts(user_id,email,password_hash,salt) SELECT ?,?,?,? WHERE EXISTS(SELECT 1 FROM professionals WHERE id=?)').bind(id,email,hash,salt,id),
-    env.DB.prepare('UPDATE invitations SET used=1 WHERE token_hash=? AND used=0 AND EXISTS(SELECT 1 FROM accounts WHERE user_id=?)').bind(inviteHash,id),
+   await env.DB.batch([
+    env.DB.prepare('INSERT INTO professionals(id,email,name) VALUES(?,?,?)').bind(id,email,d.name.trim()),
+    env.DB.prepare('INSERT INTO accounts(user_id,email,password_hash,salt) VALUES(?,?,?,?)').bind(id,email,hash,salt),
    ]);
-   if(!results[0].meta.changes)throw new HttpError(403,'La invitación ya fue utilizada.');
    return sessionResponse(env,id,201);
   }
   const account=await env.DB.prepare('SELECT user_id,password_hash,salt FROM accounts WHERE email=?').bind(email).first<{user_id:string;password_hash:string;salt:string}>();

@@ -2,7 +2,7 @@
 
 Aplicación: https://dentection.natalia-moreno-mon.workers.dev
 
-La versión web está en `web/`: cuentas profesionales por invitación, historial privado, análisis del modelo original en el navegador, resumen y detalle de detecciones, visor con zoom, observaciones de texto y descarga de PDF. Funciona en navegador de escritorio o móvil; no necesita instalar una aplicación.
+La versión web está en `web/`: registro abierto con correo, contraseña y Turnstile, historial privado, análisis del modelo original en el navegador, resumen y detalle de detecciones, visor con zoom, observaciones de texto y descarga de PDF. Funciona en navegador de escritorio o móvil; no necesita instalar una aplicación.
 
 La configuración y los límites del prototipo están documentados en [web/README.md](web/README.md). Los scripts Python originales se conservan como referencia de la versión local.
 

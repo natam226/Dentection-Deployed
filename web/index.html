@@ -12,14 +12,15 @@
   <header class="topbar"><div class="workspace-label">Espacio profesional</div><div class="account"><span id="account-avatar" class="avatar" aria-hidden="true">D</span><div><strong id="account-name">Conectando…</strong><span id="account-email"></span></div><a href="#" id="logout" title="Cerrar sesión" aria-label="Cerrar sesión"><span data-icon="logout"></span></a></div></header>
   <main id="main">
    <div id="notification" class="notification" role="status" aria-live="polite" hidden></div>
-   <section id="auth-panel" class="auth-panel" hidden><span data-icon="shield"></span><h1 id="auth-title">Accede a tu espacio</h1><p id="auth-description">Inicia sesión para consultar tus radiografías y guardar nuevos estudios.</p>
+   <section id="auth-panel" class="auth-panel" hidden aria-labelledby="auth-title"><span class="auth-symbol" data-icon="shield"></span><h1 id="auth-title">Accede a tu espacio</h1><p id="auth-description">Tus radiografías, observaciones e informes, en una cuenta privada.</p>
     <form id="auth-form" class="auth-form">
      <div id="register-name" hidden><label for="auth-name">Nombre profesional</label><input id="auth-name" type="text" maxlength="100" autocomplete="name"></div>
-     <label for="auth-email">Correo electrónico</label><input id="auth-email" type="email" required maxlength="254" autocomplete="username">
-     <label for="auth-password">Contraseña</label><input id="auth-password" type="password" required maxlength="256" autocomplete="current-password">
-     <div id="register-invitation" hidden><label for="auth-invitation">Código de invitación</label><input id="auth-invitation" type="text" maxlength="200" autocomplete="off"><p>Tu contraseña debe tener al menos 15 caracteres.</p></div>
-     <p id="auth-error" class="auth-error" role="alert" hidden></p><button id="auth-submit" class="button primary" type="submit">Iniciar sesión</button>
-    </form><button id="auth-switch" class="text-button">Tengo una invitación</button><p class="muted">El registro requiere una invitación personal. Si olvidaste tu contraseña, contacta a la administración del proyecto.</p>
+     <label for="auth-email">Correo electrónico</label><input id="auth-email" type="email" required maxlength="254" autocomplete="username" placeholder="nombre@ejemplo.com" autocapitalize="none" spellcheck="false">
+     <label for="auth-password">Contraseña</label><input id="auth-password" type="password" required maxlength="256" autocomplete="current-password" aria-describedby="password-hint"><p id="password-hint" class="field-hint" hidden>Usa al menos 15 caracteres. Puedes escribir una frase que recuerdes.</p>
+     <div id="register-confirm" hidden><label for="auth-confirm">Repite la contraseña</label><input id="auth-confirm" type="password" maxlength="256" autocomplete="new-password"></div>
+     <div class="auth-security"><div id="auth-challenge"></div><p id="auth-challenge-state" role="status" aria-live="polite">Preparando verificación de seguridad…</p><button id="auth-challenge-retry" type="button" class="text-button" hidden>Reintentar verificación</button></div>
+     <p id="auth-error" class="auth-error" role="alert" hidden></p><button id="auth-submit" class="button primary" type="submit" disabled>Iniciar sesión</button>
+    </form><div class="auth-switch-row"><span id="auth-switch-caption">¿Es tu primera visita?</span><button id="auth-switch" class="text-button">Crear una cuenta</button></div><p id="auth-account-help" class="auth-account-help">La recuperación de contraseña aún no está disponible. Conserva tus datos de acceso.</p>
    </section>
    <section id="new-view">
     <div class="page-heading"><div><h1>Revisión de radiografías</h1><p>Analiza una panorámica y reúne tus observaciones en un informe.</p></div><span class="model-tag">Modelo dental · YOLOv8n</span></div>
