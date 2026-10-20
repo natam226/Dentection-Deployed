@@ -37,7 +37,7 @@ function newStudy(){if(!busy&&canLeave())reset();}
 for(const id of ['nav-new','new-study','history-new'])$(id).addEventListener('click',newStudy);
 $('nav-history').addEventListener('click',()=>{if(!busy&&canLeave()){activate('history');clearNotice();void operation(refreshHistory);}});
 interface HistoryPage{studies:Study[];total:number;nextCursor:string|null}
-function historyState(){$('history-count').textContent=String(historyTotal);$('history-state').textContent=historyTotal>studies.length?'Mostrando '+studies.length+' de '+historyTotal+' estudios. Carga más para buscar entre los anteriores.':historyTotal+' estudios en tu historial.';$('history-more').hidden=!historyCursor;}
+function historyState(){$('history-count').textContent=String(historyTotal);$('history-state').textContent=historyTotal>studies.length?'Mostrando '+studies.length+' de '+historyTotal+' estudios. Carga más para buscar entre los anteriores.':(historyTotal===1?'1 estudio en tu historial.':historyTotal+' estudios en tu historial.');$('history-more').hidden=!historyCursor;}
 async function refreshHistory(){const result=await api<HistoryPage>('/studies');studies=result.studies;historyCursor=result.nextCursor;historyTotal=result.total;historyState();renderHistory();}
 $('history-more').addEventListener('click',()=>void operation(async()=>{if(!historyCursor)return;const result=await api<HistoryPage>('/studies?cursor='+encodeURIComponent(historyCursor));studies.push(...result.studies);historyCursor=result.nextCursor;historyTotal=result.total;historyState();renderHistory();}));
 function renderHistory(){
