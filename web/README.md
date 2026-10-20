@@ -87,6 +87,6 @@ Pruebas locales: `pnpm test` usa un Siteverify simulado en el límite de red y b
 
 Se comparó el ONNX en Chromium WASM con Python sobre el mismo tensor: 9 detecciones en ambos, error máximo de caja 0,441 píxeles y de confianza inferior a 0,000001. La imagen de prueba proviene de una figura del notebook existente y solo prueba el funcionamiento; no mide exactitud clínica. El preprocesamiento con canvas puede variar ligeramente respecto a OpenCV.
 
-Las pruebas automatizadas cubren decodificación/NMS, autenticación, invitaciones, propiedad entre cuentas, carga/reintentos, notas concurrentes, validación y cuotas. La revisión local abrió un estudio guardado, filtró detecciones, usó zoom, guardó texto con acentos y generó un PDF de dos páginas inspeccionado visualmente. También se verificaron registro/login/logout y revocación en el Worker real.
+Las pruebas automatizadas cubren decodificación/NMS, autenticación, registro abierto y Turnstile, propiedad entre cuentas, carga/reintentos, notas concurrentes, validación y cuotas. La revisión local abrió un estudio guardado, filtró detecciones, usó zoom, guardó texto con acentos y generó un PDF de dos páginas inspeccionado visualmente. También se verificaron registro/login/logout y revocación en el Worker real.
 
 Es un prototipo académico con el modelo original. Las detecciones requieren interpretación profesional; no se ha hecho validación clínica adicional ni auditoría para uso asistencial con datos reales.
