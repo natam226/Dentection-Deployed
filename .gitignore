@@ -1,0 +1,13 @@
+venv/
+.venv/
+__pycache__/
+*.pyc
+node_modules/
+dist/
+.wrangler/
+work/
+.env*
+.dev.vars*
+!.env.example
+web/public/model/*.onnx
+web/public/model/*.onnx.data
