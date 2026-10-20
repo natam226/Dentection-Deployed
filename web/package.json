@@ -1,0 +1,29 @@
+{
+  "name": "dentection-web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "tsc --noEmit && vite build",
+    "test": "vitest run",
+    "preview": "wrangler dev --ip 127.0.0.1",
+    "deploy": "pnpm build && wrangler deploy",
+    "db:local": "wrangler d1 migrations apply dentection-db --local",
+    "db:remote": "wrangler d1 migrations apply dentection-db --remote"
+  },
+  "dependencies": {
+    "jose": "^6.2.12",
+    "jspdf": "^4.2.1",
+    "onnxruntime-web": "^1.30.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261019.1",
+    "@types/node": "^26.6.5",
+    "miniflare": "^4.20260730.0",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.4",
+    "vitest": "^5.0.5",
+    "wrangler": "^4.151.2"
+  }
+}
