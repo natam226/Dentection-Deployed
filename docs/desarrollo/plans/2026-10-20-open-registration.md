@@ -20,3 +20,13 @@ Implement in an isolated Git worktree with test-driven development and a complet
 
 ## Review Focus
 Forged/missing Turnstile must never create accounts or sessions. Siteverify errors fail closed. UI retries use fresh tokens and keep entered fields. Never expose another user's studies; preserve existing account IDs/password hashes. No secrets in Git or screenshots.
+
+## Completed verification
+
+- Deployed Worker version `a5e59974-2b26-499e-989b-e241000d0c16` with the real Managed Turnstile widget and Worker secret; no paid plan activated.
+- Full suite: 41/41 tests in eight files; frontend/Worker compilation passed. Repeated tests/build on Desktop after fast-forward integration.
+- Independent review completed; confirmed provider loader defect fixed with RED-to-GREEN regression. Narrow mobile widget adjustment also verified RED-to-GREEN; browser checks at desktop and320px.
+- Missing registration token returns400, forged registration/login token returns403 with no session cookie in production.
+- User completed real open registration. Read-only D1 check confirmed a new profile/account at23:33UTC with one active session and zero studies. Existing account still has its original study. No user password was accessed.
+- Deferred minors: timeout for public Turnstile configuration fetch; explicit negative-login session-row count test. Existing shared verifier rejects before account lookup/session creation.
+- Email ownership/license verification and password recovery remain excluded and documented. Model and quota policy unchanged.
