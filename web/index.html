@@ -1,47 +1,47 @@
-<!doctype html>
-<html lang="es">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="theme-color" content="#274675"><meta name="description" content="Dentection: revisión asistida de radiografías panorámicas dentales, observaciones e informes."><title>Dentection · Revisión de radiografías</title></head>
-<body>
-<div class="app-shell">
- <aside class="sidebar" aria-label="Navegación principal">
-  <a class="brand" href="/" aria-label="Dentection, inicio"><svg viewBox="0 0 32 36" fill="none" aria-hidden="true"><path d="M16 5C8-1 1 4 3 13l4 17c1 5 4 4 5 0l2-8c.5-3 3.5-3 4 0l2 8c1 4 4 5 5 0l4-17c2-9-5-14-13-8Z" stroke="currentColor" stroke-width="2.4"/><path d="M11 7c3 1 7 1 10-1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span>Dentection</span></a>
-  <nav><button id="nav-new" class="nav-button active" aria-current="page"><span data-icon="plus"></span>Nuevo análisis</button><button id="nav-history" class="nav-button"><span data-icon="history"></span>Mis radiografías<span id="history-count" class="count">0</span></button></nav>
-  <div class="sidebar-bottom"><span class="privacy-mark" data-icon="shield"></span><p>Tus estudios son privados.<br><span>Solo tu cuenta puede acceder.</span></p></div>
- </aside>
- <div class="main-shell">
-  <header class="topbar"><div class="workspace-label">Espacio profesional</div><div class="account"><span id="account-avatar" class="avatar" aria-hidden="true">D</span><div><strong id="account-name">Conectando…</strong><span id="account-email"></span></div><a href="#" id="logout" title="Cerrar sesión" aria-label="Cerrar sesión"><span data-icon="logout"></span></a></div></header>
-  <main id="main">
-   <div id="notification" class="notification" role="status" aria-live="polite" hidden></div>
-   <section id="auth-panel" class="auth-panel" hidden><span data-icon="shield"></span><h1 id="auth-title">Accede a tu espacio</h1><p id="auth-description">Inicia sesión para consultar tus radiografías y guardar nuevos estudios.</p>
-    <form id="auth-form" class="auth-form">
-     <div id="register-name" hidden><label for="auth-name">Nombre profesional</label><input id="auth-name" type="text" maxlength="100" autocomplete="name"></div>
-     <label for="auth-email">Correo electrónico</label><input id="auth-email" type="email" required maxlength="254" autocomplete="username">
-     <label for="auth-password">Contraseña</label><input id="auth-password" type="password" required maxlength="256" autocomplete="current-password">
-     <div id="register-invitation" hidden><label for="auth-invitation">Código de invitación</label><input id="auth-invitation" type="text" maxlength="200" autocomplete="off"><p>Tu contraseña debe tener al menos 15 caracteres.</p></div>
-     <p id="auth-error" class="auth-error" role="alert" hidden></p><button id="auth-submit" class="button primary" type="submit">Iniciar sesión</button>
-    </form><button id="auth-switch" class="text-button">Tengo una invitación</button><p class="muted">El registro requiere una invitación personal. Si olvidaste tu contraseña, contacta a la administración del proyecto.</p>
-   </section>
-   <section id="new-view">
-    <div class="page-heading"><div><h1>Revisión de radiografías</h1><p>Analiza una panorámica y reúne tus observaciones en un informe.</p></div><span class="model-tag">Modelo dental · YOLOv8n</span></div>
-    <div id="upload-panel" class="upload-layout">
-     <div class="upload-zone" id="drop-zone"><div class="upload-symbol" data-icon="upload"></div><h2>Carga una radiografía panorámica</h2><p>Arrastra tu imagen aquí o selecciónala desde tu dispositivo.</p><label for="image-input" class="button primary">Seleccionar radiografía</label><input id="image-input" type="file" accept="image/png,image/jpeg,.jpg,.jpeg,.png" class="file-input"><span class="file-spec">JPG o PNG · hasta 5 MiB</span><div class="threshold-setup"><label for="analysis-threshold">Confianza mínima del análisis <output id="analysis-threshold-value">25 %</output></label><input id="analysis-threshold" type="range" min="5" max="90" step="5" value="25"><span>Un umbral menor muestra más detecciones, incluidas las de menor confianza.</span></div></div>
-     <div class="upload-explanation"><h2>Una revisión que puedes retomar</h2><ol><li><strong>Consulta los hallazgos</strong><p>Ve las zonas detectadas y el detalle de cada resultado.</p></li><li><strong>Añade tu criterio profesional</strong><p>Guarda observaciones de texto junto a la radiografía.</p></li><li><strong>Descarga el informe</strong><p>Reúne la imagen, los resultados y tus notas en un PDF.</p></li></ol><p class="processing-note">El análisis se ejecuta en este navegador. El estudio se guarda en tu historial privado de Cloudflare.</p></div>
-    </div>
-    <div id="analysis-workspace" hidden>
-     <div class="study-toolbar"><div><h2 id="study-filename"></h2><span id="study-meta" class="muted"></span></div><div class="toolbar-actions"><span id="save-status" class="save-status">Sin guardar</span><button id="retry-save" class="button secondary" hidden>Reintentar guardado</button><button id="new-study" class="button secondary"><span data-icon="plus"></span>Nuevo estudio</button></div></div>
-     <div id="activity" class="activity" role="status" hidden><span class="spinner" aria-hidden="true"></span><span id="activity-text">Preparando análisis…</span></div>
-     <div class="review-grid">
-      <section class="viewer-section" aria-label="Radiografía y detecciones"><div class="viewer-controls"><span>Radiografía panorámica</span><div><button id="zoom-out" class="icon-button" aria-label="Reducir zoom">−</button><span id="zoom-value">100 %</span><button id="zoom-in" class="icon-button" aria-label="Aumentar zoom">+</button><button id="zoom-reset" class="text-button">Ajustar</button></div></div><div id="image-viewport" class="image-viewport"><canvas id="radiograph" aria-label="Radiografía con zonas detectadas por el modelo"></canvas></div><div class="viewer-caption"><span class="box-key"></span><span>Selecciona un hallazgo para localizarlo en la imagen.</span></div></section>
-      <section class="findings-panel"><div class="findings-heading"><h2>Hallazgos</h2><span id="findings-total" class="result-count">—</span></div><div id="summary" class="summary"></div><div class="result-filters"><label for="class-filter">Tipo de hallazgo</label><select id="class-filter"><option value="all">Todos los tipos</option></select><label for="visible-threshold">Mostrar confianza desde <output id="visible-threshold-value">25 %</output></label><input id="visible-threshold" type="range" min="25" max="95" step="5" value="25"></div><div id="findings-empty" class="findings-empty" hidden>No hay detecciones con este filtro. Esto no descarta otras condiciones.</div><div class="detection-table-wrap"><table id="detections-table"><thead><tr><th scope="col">Hallazgo</th><th scope="col">Confianza</th></tr></thead><tbody id="detections-body"></tbody></table></div><p class="findings-note">Detecciones automáticas que requieren revisión profesional.</p></section>
-     </div>
-     <section class="notes-section"><div class="section-title"><div><h2>Observaciones del profesional</h2><p>Registra tu revisión y las indicaciones que quieras incluir en el informe.</p></div><span id="note-state" class="muted">Sin cambios pendientes</span></div><label class="sr-only" for="notes">Observaciones del profesional</label><textarea id="notes" rows="4" maxlength="10000" placeholder="Escribe tus observaciones sobre esta radiografía…"></textarea><div class="notes-actions"><span id="notes-count" class="muted">0 / 10.000 caracteres</span><button id="save-notes" class="button secondary" disabled>Guardar observaciones</button></div></section>
-     <footer class="report-bar"><div><strong>Tu revisión, en un solo documento</strong><p>El PDF incluye todos los hallazgos guardados y tus observaciones.</p></div><button id="download-pdf" class="button primary" disabled><span data-icon="download"></span>Descargar informe PDF</button></footer>
-    </div>
-   </section>
-   <section id="history-view" hidden><div class="page-heading"><div><h1>Mis radiografías</h1><p>Retoma tus estudios, revisa las observaciones y descarga los informes.</p></div><button id="history-new" class="button primary"><span data-icon="plus"></span>Nuevo análisis</button></div><label for="history-search" class="sr-only">Buscar por nombre de archivo</label><input type="search" id="history-search" class="search-input" placeholder="Buscar por nombre de archivo…"><div id="history-list" class="history-list"></div></section>
-   <p class="app-disclaimer">Dentection ofrece detecciones asistidas por IA. La interpretación y las observaciones corresponden al profesional.</p>
-  </main>
- </div>
-</div>
-<script type="module" src="/src/main.ts"></script>
-</body></html>
+<!doctype html>
+<html lang="es">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="theme-color" content="#274675"><meta name="description" content="Dentection: revisión asistida de radiografías panorámicas dentales, observaciones e informes."><title>Dentection · Revisión de radiografías</title></head>
+<body>
+<div class="app-shell">
+ <aside class="sidebar" aria-label="Navegación principal">
+  <a class="brand" href="/" aria-label="Dentection, inicio"><svg viewBox="0 0 32 36" fill="none" aria-hidden="true"><path d="M16 5C8-1 1 4 3 13l4 17c1 5 4 4 5 0l2-8c.5-3 3.5-3 4 0l2 8c1 4 4 5 5 0l4-17c2-9-5-14-13-8Z" stroke="currentColor" stroke-width="2.4"/><path d="M11 7c3 1 7 1 10-1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span>Dentection</span></a>
+  <nav><button id="nav-new" class="nav-button active" aria-current="page"><span data-icon="plus"></span>Nuevo análisis</button><button id="nav-history" class="nav-button"><span data-icon="history"></span>Mis radiografías<span id="history-count" class="count">0</span></button></nav>
+  <div class="sidebar-bottom"><span class="privacy-mark" data-icon="shield"></span><p>Tus estudios son privados.<br><span>Solo tu cuenta puede acceder.</span></p></div>
+ </aside>
+ <div class="main-shell">
+  <header class="topbar"><div class="workspace-label">Espacio profesional</div><div class="account"><span id="account-avatar" class="avatar" aria-hidden="true">D</span><div><strong id="account-name">Conectando…</strong><span id="account-email"></span></div><a href="#" id="logout" title="Cerrar sesión" aria-label="Cerrar sesión"><span data-icon="logout"></span></a></div></header>
+  <main id="main">
+   <div id="notification" class="notification" role="status" aria-live="polite" hidden></div>
+   <section id="auth-panel" class="auth-panel" hidden><span data-icon="shield"></span><h1 id="auth-title">Accede a tu espacio</h1><p id="auth-description">Inicia sesión para consultar tus radiografías y guardar nuevos estudios.</p>
+    <form id="auth-form" class="auth-form">
+     <div id="register-name" hidden><label for="auth-name">Nombre profesional</label><input id="auth-name" type="text" maxlength="100" autocomplete="name"></div>
+     <label for="auth-email">Correo electrónico</label><input id="auth-email" type="email" required maxlength="254" autocomplete="username">
+     <label for="auth-password">Contraseña</label><input id="auth-password" type="password" required maxlength="256" autocomplete="current-password">
+     <div id="register-invitation" hidden><label for="auth-invitation">Código de invitación</label><input id="auth-invitation" type="text" maxlength="200" autocomplete="off"><p>Tu contraseña debe tener al menos 15 caracteres.</p></div>
+     <p id="auth-error" class="auth-error" role="alert" hidden></p><button id="auth-submit" class="button primary" type="submit">Iniciar sesión</button>
+    </form><button id="auth-switch" class="text-button">Tengo una invitación</button><p class="muted">El registro requiere una invitación personal. Si olvidaste tu contraseña, contacta a la administración del proyecto.</p>
+   </section>
+   <section id="new-view">
+    <div class="page-heading"><div><h1>Revisión de radiografías</h1><p>Analiza una panorámica y reúne tus observaciones en un informe.</p></div><span class="model-tag">Modelo dental · YOLOv8n</span></div>
+    <div id="upload-panel" class="upload-layout">
+     <div class="upload-zone" id="drop-zone"><div class="upload-symbol" data-icon="upload"></div><h2>Carga una radiografía panorámica</h2><p>Arrastra tu imagen aquí o selecciónala desde tu dispositivo.</p><label for="image-input" class="button primary">Seleccionar radiografía</label><input id="image-input" type="file" accept="image/png,image/jpeg,.jpg,.jpeg,.png" class="file-input"><span class="file-spec">JPG o PNG · hasta 5 MiB</span><div class="threshold-setup"><label for="analysis-threshold">Confianza mínima del análisis <output id="analysis-threshold-value">25 %</output></label><input id="analysis-threshold" type="range" min="5" max="90" step="5" value="25"><span>Un umbral menor muestra más detecciones, incluidas las de menor confianza.</span></div></div>
+     <div class="upload-explanation"><h2>Una revisión que puedes retomar</h2><ol><li><strong>Consulta los hallazgos</strong><p>Ve las zonas detectadas y el detalle de cada resultado.</p></li><li><strong>Añade tu criterio profesional</strong><p>Guarda observaciones de texto junto a la radiografía.</p></li><li><strong>Descarga el informe</strong><p>Reúne la imagen, los resultados y tus notas en un PDF.</p></li></ol><p class="processing-note">El análisis se ejecuta en este navegador. El estudio se guarda en tu historial privado de Cloudflare.</p></div>
+    </div>
+    <div id="analysis-workspace" hidden>
+     <div class="study-toolbar"><div><h2 id="study-filename"></h2><span id="study-meta" class="muted"></span></div><div class="toolbar-actions"><span id="save-status" class="save-status">Sin guardar</span><button id="retry-save" class="button secondary" hidden>Reintentar guardado</button><button id="new-study" class="button secondary"><span data-icon="plus"></span>Nuevo estudio</button></div></div>
+     <div id="activity" class="activity" role="status" hidden><span class="spinner" aria-hidden="true"></span><span id="activity-text">Preparando análisis…</span></div>
+     <div class="review-grid">
+      <section class="viewer-section" aria-label="Radiografía y detecciones"><div class="viewer-controls"><span>Radiografía panorámica</span><div><button id="zoom-out" class="icon-button" aria-label="Reducir zoom">−</button><span id="zoom-value">100 %</span><button id="zoom-in" class="icon-button" aria-label="Aumentar zoom">+</button><button id="zoom-reset" class="text-button">Ajustar</button></div></div><div id="image-viewport" class="image-viewport"><canvas id="radiograph" aria-label="Radiografía con zonas detectadas por el modelo"></canvas></div><div class="viewer-caption"><span class="box-key"></span><span>Selecciona un hallazgo para localizarlo en la imagen.</span></div></section>
+      <section class="findings-panel"><div class="findings-heading"><h2>Hallazgos</h2><span id="findings-total" class="result-count">—</span></div><div id="summary" class="summary"></div><div class="result-filters"><label for="class-filter">Tipo de hallazgo</label><select id="class-filter"><option value="all">Todos los tipos</option></select><label for="visible-threshold">Mostrar confianza desde <output id="visible-threshold-value">25 %</output></label><input id="visible-threshold" type="range" min="25" max="95" step="5" value="25"></div><div id="findings-empty" class="findings-empty" hidden>No hay detecciones con este filtro. Esto no descarta otras condiciones.</div><div class="detection-table-wrap"><table id="detections-table"><thead><tr><th scope="col">Hallazgo</th><th scope="col">Confianza</th></tr></thead><tbody id="detections-body"></tbody></table></div><p class="findings-note">Detecciones automáticas que requieren revisión profesional.</p></section>
+     </div>
+     <section class="notes-section"><div class="section-title"><div><h2>Observaciones del profesional</h2><p>Registra tu revisión y las indicaciones que quieras incluir en el informe.</p></div><span id="note-state" class="muted">Sin cambios pendientes</span></div><label class="sr-only" for="notes">Observaciones del profesional</label><textarea id="notes" rows="4" maxlength="10000" placeholder="Escribe tus observaciones sobre esta radiografía…"></textarea><div class="notes-actions"><span id="notes-count" class="muted">0 / 10.000 caracteres</span><button id="save-notes" class="button secondary" disabled>Guardar observaciones</button></div></section>
+     <footer class="report-bar"><div><strong>Tu revisión, en un solo documento</strong><p>El PDF incluye todos los hallazgos guardados y tus observaciones.</p></div><button id="download-pdf" class="button primary" disabled><span data-icon="download"></span>Descargar informe PDF</button></footer>
+    </div>
+   </section>
+   <section id="history-view" hidden><div class="page-heading"><div><h1>Mis radiografías</h1><p>Retoma tus estudios, revisa las observaciones y descarga los informes.</p></div><button id="history-new" class="button primary"><span data-icon="plus"></span>Nuevo análisis</button></div><label for="history-search" class="sr-only">Buscar por nombre de archivo</label><input type="search" id="history-search" class="search-input" placeholder="Buscar por nombre de archivo…"><div id="history-list" class="history-list"></div></section>
+   <p class="app-disclaimer">Dentection ofrece detecciones asistidas por IA. La interpretación y las observaciones corresponden al profesional.</p>
+  </main>
+ </div>
+</div>
+<script type="module" src="/src/main.ts"></script>
+</body></html>
