@@ -10,7 +10,7 @@ let token='',completedAt=0,generation=0,target:HTMLElement|undefined,action='log
 function loadAPI():Promise<TurnstileAPI>{
  if(window.turnstile)return new Promise(resolve=>window.turnstile!.ready(()=>resolve(window.turnstile!)));
  if(!apiPromise)apiPromise=new Promise<TurnstileAPI>((resolve,reject)=>{
-  const script=document.createElement('script');script.src='https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';script.async=true;
+  const script=document.createElement('script');script.src='https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';script.async=false;
   const fail=()=>{script.remove();reject(new Error('No se pudo cargar la verificación. Comprueba la conexión y reintenta.'));};
   const timeout=setTimeout(fail,15000);
   script.addEventListener('error',()=>{clearTimeout(timeout);fail();},{once:true});
@@ -25,7 +25,7 @@ export async function prepareChallenge(container:HTMLElement,nextAction:string,o
  try{
   if(!siteKey){const response=await fetch('/api/auth/config',{credentials:'same-origin'});if(!response.ok)throw new Error('La verificación no está disponible. Reintenta en unos segundos.');const config=await response.json();if(typeof config.siteKey!=='string'||!config.siteKey)throw new Error('La verificación no está disponible.');siteKey=config.siteKey;}
   const api=await loadAPI();if(current!==generation)return;
-  widget=api.render(container,{sitekey:siteKey,action:nextAction,theme:'light',size:'flexible',language:'es',
+  widget=api.render(container,{sitekey:siteKey,action:nextAction,theme:'light',size:container.clientWidth<300?'compact':'flexible',language:'es',
    callback:(value:string)=>{if(current!==generation)return;token=value;completedAt=Date.now();onChange(true,'Verificación completada.');},
    'expired-callback':()=>{if(current!==generation)return;token='';onChange(false,'La verificación venció. Se está renovando…');},
    'error-callback':()=>{if(current!==generation)return;token='';onChange(false,'No se pudo verificar. Revisa la conexión y reintenta.',true);},
