@@ -32,21 +32,21 @@ Files: `scripts/export_model.py`, `web/public/model/model.onnx`, `web/public/mod
 
 Interfaces: `Detection = {classId:number, confidence:number, box:[number,number,number,number]}` in original-image pixels; `decodeDetections(data, dimensions, geometry, conf, iou): Detection[]`; `Geometry={width,height,scale,padX,padY}`.
 
-- [ ] Install isolated CPU export dependencies; export static 640 ONNX opset 17 and names metadata.
-- [ ] Add failing tests for YOLOv8 output, class-aware NMS, letterbox reversal and empty results; run and observe failure.
-- [ ] Implement decoder and browser preprocessing. Compare Python and browser on same existing notebook image with matching settings; record predictions and parity tolerances.
-- [ ] Commit verified inference and dependency lockfiles.
+- [x] Install isolated CPU export dependencies; export static 640 ONNX opset 17 and names metadata.
+- [x] Add failing tests for YOLOv8 output, class-aware NMS, letterbox reversal and empty results; run and observe failure.
+- [x] Implement decoder and browser preprocessing. Compare Python and browser on same existing notebook image with matching settings; record predictions and parity tolerances.
+- [x] Commit verified inference and dependency lockfiles.
 
 ## Task 2: Private cloud API
 
-Files: `web/worker/index.ts`, `web/worker/auth.ts`, `web/worker/studies.ts`, `web/migrations/0001_initial.sql`, `web/wrangler.jsonc`, `web/tests/api.test.ts`.
+Files: `web/worker/index.ts`, `web/worker/password-auth.ts`, `web/worker/studies.ts`, `web/migrations/0001_initial.sql`, `web/wrangler.jsonc`, `web/tests/api.test.ts`.
 
-Interfaces: GET `/api/me`; GET/POST `/api/studies`; GET `/api/studies/:uuid`; PUT `/api/studies/:uuid/image`; GET `/api/studies/:uuid/image`; PATCH `/api/studies/:uuid/notes`; DELETE `/api/studies/:uuid`. POST allocates UUID from client-provided request UUID to make retry idempotent; ownership always from verified Access subject. Study includes id, filename, createdAt, status, modelVersion, parameters, detections, notes, width, height, size, mimeType.
+Interfaces: GET `/api/me`; GET/POST `/api/studies`; GET `/api/studies/:uuid`; PUT `/api/studies/:uuid/image`; GET `/api/studies/:uuid/image`; PATCH `/api/studies/:uuid/notes`; DELETE `/api/studies/:uuid`. POST allocates UUID from client-provided request UUID to make retry idempotent; ownership always from a validated server-side session. Study includes id, filename, createdAt, status, modelVersion, parameters, detections, notes, width, height, size, mimeType.
 
-- [ ] Add failing integration tests against local D1/KV for unauthenticated, forged-header and cross-owner reads/updates; invalid IDs and images; quota, idempotent save and normal history.
-- [ ] Implement verified Access JWT identity (static-assets router does not forward ctx.access); enforce issuer, audience, signature and expiration, plus origin checks on mutations. Local-only test identities must not be deployable or client-controlled in production.
-- [ ] Implement schema, original-image streaming, immutable KV keys, byte/content checks, owner-scoped queries, per-owner daily quota and 500 MiB quota accounting in D1 transactions. Never cache private responses publicly.
-- [ ] Run integration suite and commit. Document KV propagation and partial-upload recovery.
+- [x] Add failing integration tests against local D1/KV for unauthenticated, forged-header and cross-owner reads/updates; invalid IDs and images; quota, idempotent save and normal history.
+- [x] Implement the user-approved invite/password replacement for Access: one-time email-bound invitations, salted password hashing with an independent secret pepper, opaque expiring sessions, revocation and attempt limits, plus origin checks on mutations. Local-only test identities must not be deployable or client-controlled in production.
+- [x] Implement schema, original-image streaming, immutable KV keys, byte/content checks, owner-scoped queries, per-owner daily quota and 500 MiB quota accounting in D1 transactions. Never cache private responses publicly.
+- [x] Run integration suite and commit. Document KV propagation and partial-upload recovery.
 
 ## Task 3: Browser workflow and PDF
 
@@ -54,20 +54,23 @@ Files: `web/index.html`, `web/src/main.ts`, `web/src/styles.css`, `web/src/infer
 
 Consumes Task 1 Detection and Task 2 API. Produces usable profile, history, upload/analysis workspace, detail/summary, notes save and PDF download. Inference loaded lazily and cached; results retained across interactions. PDF uses current persisted notes; warn/save before export if dirty.
 
-- [ ] Review product context and visual requirements; retain the clinical blue palette and prioritize the review workflow.
-- [ ] Add workflow tests for failed save retry and dirty note/export state, then implement state transitions and browser UI.
-- [ ] Implement real image decoding, progress, model inference, selectable boxes/table, confidence filter, history/reopen/delete, and separate automatic findings/professional note PDF.
-- [ ] Build; test full workflow with local Cloudflare emulator and review PDF and screenshots at desktop and narrow widths. Commit working application.
+- [x] Review product context and visual requirements; retain the clinical blue palette and prioritize the review workflow.
+- [x] Add workflow tests for failed save retry and dirty note/export state, then implement state transitions and browser UI.
+- [x] Implement real image decoding, progress, model inference, selectable boxes/table, confidence filter, history/reopen/delete, and separate automatic findings/professional note PDF.
+- [x] Build; test full workflow with local Cloudflare emulator and review PDF and screenshots at desktop and narrow widths. Commit working application.
 
 ## Task 4: Publish and verify
 
 Files: `README.md`, deployment instructions, evidence output, progress ledger.
 
-- [ ] Initiate Wrangler OAuth; user completes login. Create only this app's D1/KV/Worker and Access app/OTP configuration; no paid subscriptions or unrelated account changes.
-- [ ] Apply remote migration, publish static assets/model/API, configure Access allowlist and issuer/audience, verify real OTP login and persist/reopen/download flow.
-- [ ] Run complete automated suite and fresh whole-branch review; fix important findings with regression tests. Preserve any unresolved external blocker explicitly.
-- [ ] Integrate verified branch into Desktop checkout, leave reproducible instructions, URL and known limitations. Never claim deployment if not verified.
+- [x] Initiate Wrangler OAuth; user completes login. Create only this app's D1/KV/Worker and invite-only account configuration; no paid subscriptions or unrelated account changes.
+- [x] Apply remote migration, publish static assets/model/API, configure password sessions and invitations, verify real login and persist/reopen/download flow.
+- [x] Run complete automated suite and fresh whole-branch review; fix important findings with regression tests. Preserve any unresolved external blocker explicitly.
+- [x] Integrate verified branch into Desktop checkout, leave reproducible instructions, URL and known limitations. Never claim deployment if not verified.
 
 ## Execution choice and interface review
 
 The user explicitly approved the design and instructed implementation to begin. Proceed inline without another plan-approval interruption. Task 1 Detection is shared verbatim by API validation and UI; the API paths are fixed here; PDF consumes the same stored record. No conflicting task interfaces identified. Use the available bundled Node/Python runtimes; isolated dependency caches under workspace work/. Native worktree creation cannot target this projectless chat's external Desktop repository, so an ordinary Git worktree was created for that repository.
+
+
+Completion: original Desktop checkout integrated on main; 27 automated tests and production build pass there. Cloudflare deployment 81b40ea5-ebb9-4b22-8c87-9a277e0bbf5e verified. Live user account, upload, analysis, history/reopen, notes and PDF checked. Fresh whole-branch review completed; five Important findings fixed with RED-to-GREEN regressions. Administrative password reset remains a documented minor limitation. No retraining, clinical validation or physical-phone performance claim.
