@@ -23,7 +23,7 @@ No se activó Zero Trust/Access: su alta gratuita solicitó tarjeta y la usuaria
 
 ## Ejecutar y verificar
 
-Necesitas Node 22 o superior y pnpm. El modelo ONNX ya está incluido; Python solo es necesario si quieres volver a exportarlo. Desde la raíz del repositorio:
+Necesitas Node 22.12 o superior y pnpm. El modelo ONNX ya está incluido; Python solo es necesario si quieres volver a exportarlo. Desde la raíz del repositorio:
 
 ```powershell
 cd web
