@@ -1,4 +1,6 @@
-# Dentection
+# Dentection Deployed
+
+Repositorio independiente de la versión web desplegada, basado en [natam226/Dentection](https://github.com/natam226/Dentection). Conserva el historial y los créditos del proyecto original.
 
 Aplicación: [Abrir Dentection](https://dentection.natalia-moreno-mon.workers.dev).
 
@@ -7,6 +9,7 @@ Revisión asistida de radiografías panorámicas dentales en el navegador de esc
 ## Estructura actual
 
 - `web/`: interfaz TypeScript/Vite, API de Cloudflare Workers, migraciones D1, pruebas y configuración de despliegue.
+- `web/public/model/model.onnx`: modelo exportado incluido para compilar la web sin instalar Python.
 - `modelo/best_dental_kaggle.pt`: pesos originales utilizados para generar el modelo ONNX del navegador.
 - `modelo/detection_model_yolov8.ipynb`: notebook original y fuente de la muestra usada en la comparación técnica del modelo.
 - `scripts/export_model.py`: exportación ONNX y generación de datos locales de comparación Python/navegador.
@@ -34,9 +37,13 @@ python -m venv .venv-export
 .venv-export\Scripts\python scripts/export_model.py
 ```
 
-El modelo exportado, el runtime WASM, las dependencias, las compilaciones y los archivos temporales no se versionan. Los pesos y el notebook sí se conservan para reproducir la exportación y permitir trabajo posterior sobre el modelo.
+Esta copia incluye el modelo ONNX exportado. El runtime WASM se prepara durante la compilación; las dependencias, las compilaciones y los archivos temporales no se versionan. Los pesos y el notebook sí se conservan para reproducir la exportación y permitir trabajo posterior sobre el modelo.
 
 Consulta [web/README.md](web/README.md) para el arranque local, Cloudflare, secretos, límites y recuperación. La pantalla de acceso y registro no muestra la navegación del espacio profesional; esta aparece tras autenticar la sesión.
+
+## Recursos de Cloudflare
+
+La configuración conserva el Worker, D1 y KV de la aplicación existente. Crear este repositorio no crea otro despliegue ni duplica cuentas o radiografías. Los secretos siguen configurados en Cloudflare y no se incluyen en Git. Para desplegar en otra cuenta se necesitan recursos y un widget Turnstile propios; consulta `web/README.md`.
 
 ## Alcance
 

@@ -23,12 +23,9 @@ No se activó Zero Trust/Access: su alta gratuita solicitó tarjeta y la usuaria
 
 ## Ejecutar y verificar
 
-Necesitas Node 22 o superior, pnpm y Python para exportar el modelo. Desde la raíz del repositorio:
+Necesitas Node 22 o superior y pnpm. El modelo ONNX ya está incluido; Python solo es necesario si quieres volver a exportarlo. Desde la raíz del repositorio:
 
 ```powershell
-python -m venv .venv-export
-.venv-export\Scripts\python -m pip install -r requirements.txt
-.venv-export\Scripts\python scripts/export_model.py
 cd web
 pnpm install --frozen-lockfile
 pnpm test
@@ -57,7 +54,7 @@ pnpm run deploy
 
 Las migraciones se aplicaron a la base remota. Las muestras de equivalencia se guardan solo en `work/parity`, fuera de archivos públicos. El servidor local de Vite las sirve en `/proof/`; la compilación rechaza un directorio `public/proof`.
 
-El archivo ONNX y el runtime WASM se generan localmente y están ignorados por Git; `pnpm build` avisa si falta el modelo. Los pesos `.pt` originales están en el repositorio.
+El archivo ONNX está incluido en este repositorio. El runtime WASM se prepara durante la compilación y está ignorado por Git; `pnpm build` avisa si falta el modelo. Los pesos `.pt` originales también se conservan para reproducir la exportación con `scripts/export_model.py`.
 
 ## Registro abierto y Turnstile
 

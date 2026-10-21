@@ -13,6 +13,7 @@ work/
 .dev.vars*
 !.env.example
 web/public/model/*.onnx
+!web/public/model/model.onnx
 web/public/model/*.onnx.data
 web/public/proof/
 modelo/*.onnx
