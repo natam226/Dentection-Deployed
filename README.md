@@ -29,6 +29,39 @@ Funciona en navegadores de escritorio y celulares; no requiere instalar una apli
 
 El primer análisis necesita descargar el modelo y su runtime, aproximadamente 27 MB en conjunto. El tiempo de procesamiento depende del dispositivo, especialmente en celulares.
 
+## Capturas de la aplicación
+
+### Resultados, observaciones e informe
+
+El visor muestra las zonas detectadas, un resumen por tipo de hallazgo y el detalle de confianza. En la misma pantalla se guardan las observaciones del profesional y se descarga el informe PDF.
+
+![Resultados del ejemplo: radiografía con zonas detectadas, lista de hallazgos, observaciones guardadas y botón para descargar el informe PDF](docs/images/03-resultados-observaciones.jpg)
+
+<details>
+<summary>Ver el acceso, la carga de imágenes y el historial</summary>
+
+### 1. Acceder a tu espacio
+
+El inicio de sesión permite entrar a la cuenta del profesional. Desde esta pantalla también se puede abrir el registro, sin invitación.
+
+![Pantalla de inicio de sesión con correo, contraseña, verificación Turnstile y acceso al registro](docs/images/01-iniciar-sesion.png)
+
+### 2. Cargar una radiografía
+
+Selecciona una imagen JPG o PNG y ajusta la confianza mínima antes de analizarla.
+
+![Pantalla de nuevo análisis con selector de radiografía, límite de archivo y ajuste de confianza](docs/images/02-cargar-radiografia.jpg)
+
+### 3. Retomar un estudio
+
+El historial permite buscar por nombre de archivo y abrir los estudios guardados para revisar sus hallazgos, observaciones e informes.
+
+![Historial local con un estudio de ejemplo guardado, nueve hallazgos y observaciones](docs/images/04-historial.jpg)
+
+</details>
+
+Las vistas de revisión e historial corresponden a la demostración local, con una identidad ficticia y una imagen de ejemplo ya incluida en el notebook público del proyecto. Las detecciones proceden de la comprobación técnica del modelo; no representan una consulta ni una validación clínica. [Procedencia de las capturas](docs/images/README.md).
+
 ## ¿Cómo funciona la IA?
 
 Se utiliza el modelo **YOLOv8n** del proyecto original, exportado al formato **ONNX**. La inferencia se ejecuta en el navegador mediante ONNX Runtime Web y WebAssembly; no necesita un servidor de inferencia con GPU.
