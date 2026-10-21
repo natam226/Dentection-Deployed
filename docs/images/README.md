@@ -4,7 +4,7 @@ Imágenes para la documentación del repositorio. Son capturas de la interfaz re
 
 | Archivo | Vista | Procedencia |
 | --- | --- | --- |
-| `01-iniciar-sesion.png` | Inicio de sesión | Captura existente de la interfaz publicada después de retirar la navegación del acceso. Campos vacíos. |
+| `01-iniciar-sesion.jpg` | Inicio de sesión | Captura existente de la interfaz publicada después de retirar la navegación del acceso. Campos vacíos. |
 | `02-cargar-radiografia.jpg` | Nuevo análisis | Captura del entorno local con `wrangler.local.jsonc`. |
 | `03-resultados-observaciones.jpg` | Resultados, notas y descarga de PDF | Captura del entorno local con un estudio de demostración preparado para documentar el visor. |
 | `04-historial.jpg` | Historial | Captura del mismo estudio local después de guardar las observaciones. |

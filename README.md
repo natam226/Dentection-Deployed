@@ -44,7 +44,7 @@ El visor muestra las zonas detectadas, un resumen por tipo de hallazgo y el deta
 
 El inicio de sesión permite entrar a la cuenta del profesional. Desde esta pantalla también se puede abrir el registro, sin invitación.
 
-![Pantalla de inicio de sesión con correo, contraseña, verificación Turnstile y acceso al registro](docs/images/01-iniciar-sesion.png)
+![Pantalla de inicio de sesión con correo, contraseña, verificación Turnstile y acceso al registro](docs/images/01-iniciar-sesion.jpg)
 
 ### 2. Cargar una radiografía
 
