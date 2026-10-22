@@ -10,6 +10,22 @@ Funciona en navegadores de escritorio y celulares; no requiere instalar una apli
 
 > Las detecciones son un apoyo para la revisión profesional. El proyecto no cuenta con validación clínica adicional y sus resultados no sustituyen un diagnóstico.
 
+## Qué demuestra este proyecto
+
+- **Visión por computador aplicada:** adaptación del modelo YOLOv8n original a ONNX para ejecutar inferencia en el navegador con WebAssembly.
+- **Producto de datos:** un flujo completo desde la carga de la imagen hasta la revisión de resultados, observaciones e informe PDF.
+- **Despliegue e integración:** TypeScript y Vite para la interfaz; Cloudflare Workers, D1 y KV para acceso y persistencia.
+- **Alcance documentado:** categorías del modelo, procedencia de capturas, comprobación técnica de equivalencia y límites del prototipo.
+
+**Para revisar el trabajo:** [interfaz e inferencia](web/src/) · [API y autenticación](web/worker/) · [pruebas](web/tests/) · [documentación técnica](web/README.md).
+
+<details>
+<summary><b>English overview</b></summary>
+
+Academic dental X-ray review prototype built from the original collaborative Dentection project. A YOLOv8n model runs in the browser through ONNX Runtime Web; the deployed application includes user accounts, private study history, professional notes and PDF reports. Cloudflare Workers, D1 and KV support the web application and persistence. The adaptation does not introduce new model training or additional clinical validation.
+
+</details>
+
 ## ¿Qué puedes hacer?
 
 - **Crear una cuenta sin invitación:** registro con nombre, correo y contraseña, protegido por Cloudflare Turnstile. La contraseña debe tener al menos 15 caracteres.
